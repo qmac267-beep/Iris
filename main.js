@@ -64,7 +64,7 @@ scene.add(dirLight);
 
 const fill = new THREE.DirectionalLight(
     0xaaaaff,
-    0.6
+    0.2
 );
 
 fill.position.set(-2,2,2);
