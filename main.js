@@ -97,7 +97,7 @@ loader.register((parser)=>{
 
 loader.load(
 
-"/character.vrm",
+"./character.vrm",
 
 (gltf)=>{
 
