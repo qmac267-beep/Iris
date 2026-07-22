@@ -73,7 +73,6 @@ scene.add(fill);
 const clock = new THREE.Clock();
 let currentVrm = null;
 
-// Timer điều khiển phản ứng giật mình & cử chỉ ngượng ngùng
 let clickReactionTimer = 0;
 let shyTimer = 0; // Khi > 0 sẽ thực hiện cử chỉ 2 ngón trỏ chạm vào nhau
 
@@ -137,7 +136,6 @@ window.addEventListener("mousemove", (e) => {
 const raycaster = new THREE.Raycaster();
 
 window.addEventListener("click", (e) => {
-    // Tránh ăn sự kiện khi bấm nút chat hoặc microphone
     if (e.target.tagName === "BUTTON" || e.target.tagName === "INPUT") return;
 
     raycaster.setFromCamera(mouse, camera);
@@ -147,7 +145,7 @@ window.addEventListener("click", (e) => {
 
         if (intersects.length > 0) {
             clickReactionTimer = 0.5;
-            shyTimer = 3.5; // Kích hoạt cử chỉ ngượng ngùng
+            shyTimer = 3.5;
             setExpression("surprised");
 
             irisSpeak("Bạn chạm vào Iris làm gì thế? Hihi 💜");
@@ -169,10 +167,8 @@ function updateShyPose(time) {
     const leftHand = currentVrm.humanoid?.getRawBoneNode("leftHand");
     const rightHand = currentVrm.humanoid?.getRawBoneNode("rightHand");
 
-    // Nhịp gõ nhẹ liên tục giữa 2 ngón trỏ
     const tap = Math.sin(time * 9) * 0.025;
 
-    // Tay trái đưa ra trước ngực
     if (leftUpperArm) {
         leftUpperArm.rotation.x = 0.55;
         leftUpperArm.rotation.y = -0.25;
@@ -189,7 +185,6 @@ function updateShyPose(time) {
         leftHand.rotation.z = 0.2;
     }
 
-    // Tay phải đối xứng
     if (rightUpperArm) {
         rightUpperArm.rotation.x = 0.55;
         rightUpperArm.rotation.y = 0.25;
@@ -206,7 +201,6 @@ function updateShyPose(time) {
         rightHand.rotation.z = -0.2;
     }
 
-    // Co các ngón tay khác lại (nắm đấm nhẹ), duỗi thẳng ngón trỏ
     const otherFingers = ["Thumb", "Middle", "Ring", "Little"];
     ["left", "right"].forEach((side) => {
         otherFingers.forEach((finger) => {
@@ -299,37 +293,38 @@ function updateIdle(time, delta) {
         head.rotation.z = Math.sin(time * 1.5) * 0.015;
     }
 
-    // 4. Nếu đang trong thời gian ngượng ngùng thì thực hiện chạm ngón trỏ
+    // 4. Nếu đang trong thời gian ngượng ngùng thì cử chỉ 2 ngón trỏ chạm nhau
     if (shyTimer > 0) {
         shyTimer -= delta;
         updateShyPose(time);
-        return; // Tạm thời bỏ qua tư thế A-pose mặc định bên dưới
+        return;
     }
 
-    // 5. Tư thế buông tay tự nhiên (A-Pose) khi ở trạng thái bình thường
+    // 5. TƯ THẾ THẢ TAY BÌNH THƯỜNG (Khép sát 2 tay xuôi theo thân người)
     const leftUpperArm = currentVrm.humanoid?.getRawBoneNode("leftUpperArm");
     const rightUpperArm = currentVrm.humanoid?.getRawBoneNode("rightUpperArm");
-    const leftShoulder = currentVrm.humanoid?.getRawBoneNode("leftShoulder");
-    const rightShoulder = currentVrm.humanoid?.getRawBoneNode("rightShoulder");
-
-    if (leftShoulder) {
-        leftShoulder.rotation.z = Math.PI / 18;
-        leftShoulder.rotation.x = Math.sin(time * 2) * 0.012;
-    }
-    if (rightShoulder) {
-        rightShoulder.rotation.z = -Math.PI / 18;
-        rightShoulder.rotation.x = Math.sin(time * 2) * 0.012;
-    }
+    const leftLowerArm = currentVrm.humanoid?.getRawBoneNode("leftLowerArm");
+    const rightLowerArm = currentVrm.humanoid?.getRawBoneNode("rightLowerArm");
 
     if (leftUpperArm) {
-        leftUpperArm.rotation.x = 0;
+        leftUpperArm.rotation.x = 0.1;
         leftUpperArm.rotation.y = 0;
-        leftUpperArm.rotation.z = Math.PI / 3.2 + Math.sin(time * 1.8) * 0.015;
+        // Góc 1.25 rad giúp tay xuôi thẳng xuống đùi chứ không dang rộng ra
+        leftUpperArm.rotation.z = 1.25 + Math.sin(time * 1.8) * 0.015;
     }
     if (rightUpperArm) {
-        rightUpperArm.rotation.x = 0;
+        rightUpperArm.rotation.x = 0.1;
         rightUpperArm.rotation.y = 0;
-        rightUpperArm.rotation.z = -Math.PI / 3.2 - Math.sin(time * 1.8) * 0.015;
+        rightUpperArm.rotation.z = -1.25 - Math.sin(time * 1.8) * 0.015;
+    }
+
+    if (leftLowerArm) {
+        leftLowerArm.rotation.x = 0.1;
+        leftLowerArm.rotation.z = 0;
+    }
+    if (rightLowerArm) {
+        rightLowerArm.rotation.x = 0.1;
+        rightLowerArm.rotation.z = 0;
     }
 }
 
@@ -503,7 +498,6 @@ function askIris() {
 
     const clean = removeAccent(text);
 
-    // Kích hoạt animation chạm ngón trỏ khi được khen!
     if (clean.includes("dep") || clean.includes("cute") || clean.includes("xinh") || clean.includes("de thuong")) {
         shyTimer = 4.5;
     }
@@ -574,7 +568,7 @@ if (SpeechRecognition) {
 }
 
 // ===========================================
-// Dynamic Lip-Sync Speech Engine (Nhép môi sinh động)
+// Dynamic Lip-Sync Speech Engine (Giọng Nữ Tự Nhiên)
 // ===========================================
 
 function irisSpeak(text) {
@@ -582,9 +576,24 @@ function irisSpeak(text) {
 
     const speech = new SpeechSynthesisUtterance(text);
     speech.lang = "vi-VN";
-    speech.rate = 1;
-    speech.pitch = 1.2;
+    speech.rate = 0.95;  // Tốc độ vừa phải
+    speech.pitch = 1.35; // Cao độ trong trẻo cho giọng nữ
     speech.volume = 1;
+
+    // Tự động tìm và ưu tiên Giọng Nữ tiếng Việt
+    const voices = speechSynthesis.getVoices();
+    const femaleVoice = voices.find(
+        (v) =>
+            v.lang.includes("vi") &&
+            (v.name.includes("Female") ||
+             v.name.includes("HoaiMy") ||
+             v.name.includes("Google") ||
+             v.name.includes("Linh"))
+    ) || voices.find((v) => v.lang.includes("vi"));
+
+    if (femaleVoice) {
+        speech.voice = femaleVoice;
+    }
 
     let lipInterval = null;
 
@@ -614,6 +623,13 @@ function irisSpeak(text) {
     };
 
     speechSynthesis.speak(speech);
+}
+
+// Đảm bảo lấy được danh sách giọng nói khi trình duyệt tải xong
+if (typeof speechSynthesis !== "undefined" && speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = () => {
+        speechSynthesis.getVoices();
+    };
 }
 
 // ===========================================
