@@ -1,9 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import {
-    VRMLoaderPlugin,
-    VRMUtils
-} from "@pixiv/three-vrm";
+import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
 
 // =========================
 // Scene Setup
@@ -25,7 +22,7 @@ const camera = new THREE.PerspectiveCamera(
     100
 );
 
-camera.position.set(0, 1.35, 2.2);
+camera.position.set(0, 1.25, 1.95);
 
 // =========================
 // Renderer
@@ -38,44 +35,30 @@ const renderer = new THREE.WebGLRenderer({
 
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
-
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 container.appendChild(renderer.domElement);
 
 // =========================
-// Lighting System (Dịu mắt & Ánh tím huyền ảo)
+// Lighting System
 // =========================
 
-scene.add(new THREE.HemisphereLight(
-    0xdbe9ff,
-    0x332244,
-    0.8
-));
+scene.add(new THREE.HemisphereLight(0xdbe9ff, 0x332244, 0.8));
 
-const dirLight = new THREE.DirectionalLight(
-    0xffe3ff,
-    1.1
-);
+const dirLight = new THREE.DirectionalLight(0xffe3ff, 1.1);
 dirLight.position.set(1, 3, 2);
 scene.add(dirLight);
 
-const fill = new THREE.DirectionalLight(
-    0xaaaaff,
-    0.4
-);
+const fill = new THREE.DirectionalLight(0xaaaaff, 0.4);
 fill.position.set(-2, 2, 2);
 scene.add(fill);
 
 // =========================
-// Variables & Clock
+// Variables & State
 // =========================
 
 const clock = new THREE.Clock();
 let currentVrm = null;
-
-// Biến điều khiển chuyển động phản ứng (Click reaction)
-let clickReactionTimer = 0;
 
 // =========================
 // VRM Loader
@@ -100,12 +83,12 @@ loader.load(
         VRMUtils.rotateVRM0(vrm);
 
         vrm.scene.rotation.y = Math.PI;
-        vrm.scene.position.set(0, 0.6, -1);
+        vrm.scene.position.set(0, 0.6, -0.5);
 
         scene.add(vrm.scene);
         currentVrm = vrm;
 
-        console.log("Iris Loaded!");
+        console.log("Iris Loaded Successfully!");
     },
     (xhr) => {
         if (xhr.total) {
@@ -120,7 +103,7 @@ loader.load(
 const lookTarget = new THREE.Vector3(0, 1.15, 0);
 
 // =========================
-// Mouse Look & Interactive Tracking
+// Mouse Look
 // =========================
 
 const mouse = new THREE.Vector2(0, 0);
@@ -131,33 +114,7 @@ window.addEventListener("mousemove", (e) => {
 });
 
 // =========================
-// Click Interaction (Chạm vào Iris)
-// =========================
-
-const raycaster = new THREE.Raycaster();
-
-window.addEventListener("click", (e) => {
-    // Tránh ăn sự kiện khi bấm nút chat hoặc microphone
-    if (e.target.tagName === "BUTTON" || e.target.tagName === "INPUT") return;
-
-    raycaster.setFromCamera(mouse, camera);
-
-    if (currentVrm) {
-        const intersects = raycaster.intersectObjects(currentVrm.scene.children, true);
-
-        if (intersects.length > 0) {
-            // Kích hoạt phản ứng giật mình nhẹ + Đổi biểu cảm ngạc nhiên
-            clickReactionTimer = 0.5;
-            setExpression("surprised");
-
-            // Phát tiếng chào
-            irisSpeak("Bản chạm vào Iris làm gì thế? Hihi 💜");
-        }
-    }
-});
-
-// =========================
-// Idle Animation & Dynamic Breathing System
+// Blink & LookAt Systems
 // =========================
 
 let blinkTimer = 0;
@@ -200,6 +157,10 @@ function updateLookAt(delta) {
     }
 }
 
+// =========================
+// Idle Animation: Nhún nhảy nhẹ nhàng + Khép sát 2 tay
+// =========================
+
 function updateIdle(time, delta) {
     if (!currentVrm) return;
 
@@ -207,48 +168,42 @@ function updateIdle(time, delta) {
     const spine = currentVrm.humanoid?.getNormalizedBoneNode("spine");
     const head = currentVrm.humanoid?.getNormalizedBoneNode("head");
 
-    // 1. Nhấp nhô bụng & hông khi thở
     if (body) {
-        body.position.y = Math.sin(time * 2) * 0.008;
-        body.rotation.z = Math.sin(time * 1.3) * 0.01;
-
-        // Xử lý hiệu ứng nảy người khi được click chuột
-        if (clickReactionTimer > 0) {
-            clickReactionTimer -= delta;
-            body.position.y += Math.sin(clickReactionTimer * Math.PI * 4) * 0.03;
-        }
+        body.position.y = Math.sin(time * 3.5) * 0.025;
+        body.rotation.z = Math.sin(time * 1.8) * 0.015;
     }
 
-    // 2. Độ nghiêng cột sống nhẹ
     if (spine) {
-        spine.rotation.x = Math.sin(time * 2) * 0.01;
+        spine.rotation.x = Math.sin(time * 3.5) * 0.02;
     }
 
-    // 3. Đầu lắc nhẹ tự nhiên
     if (head) {
-        head.rotation.z = Math.sin(time * 1.5) * 0.015;
+        head.rotation.z = Math.sin(time * 2.5) * 0.02;
     }
 
-    // 4. Tư thế tay (A-Pose) + Đung đưa tay nhẹ khi đứng yên
     const leftUpperArm = currentVrm.humanoid?.getRawBoneNode("leftUpperArm");
     const rightUpperArm = currentVrm.humanoid?.getRawBoneNode("rightUpperArm");
-    const leftShoulder = currentVrm.humanoid?.getRawBoneNode("leftShoulder");
-    const rightShoulder = currentVrm.humanoid?.getRawBoneNode("rightShoulder");
-
-    if (leftShoulder) {
-        leftShoulder.rotation.z = Math.PI / 18;
-        leftShoulder.rotation.x = Math.sin(time * 2) * 0.012;
-    }
-    if (rightShoulder) {
-        rightShoulder.rotation.z = -Math.PI / 18;
-        rightShoulder.rotation.x = Math.sin(time * 2) * 0.012;
-    }
+    const leftLowerArm = currentVrm.humanoid?.getRawBoneNode("leftLowerArm");
+    const rightLowerArm = currentVrm.humanoid?.getRawBoneNode("rightLowerArm");
 
     if (leftUpperArm) {
-        leftUpperArm.rotation.z = Math.PI / 3.2 + Math.sin(time * 1.8) * 0.015;
+        leftUpperArm.rotation.x = 0.05;
+        leftUpperArm.rotation.y = 0;
+        leftUpperArm.rotation.z = 1.35 + Math.sin(time * 3.5) * 0.02;
     }
     if (rightUpperArm) {
-        rightUpperArm.rotation.z = -Math.PI / 3.2 - Math.sin(time * 1.8) * 0.015;
+        rightUpperArm.rotation.x = 0.05;
+        rightUpperArm.rotation.y = 0;
+        rightUpperArm.rotation.z = -1.35 - Math.sin(time * 3.5) * 0.02;
+    }
+
+    if (leftLowerArm) {
+        leftLowerArm.rotation.x = 0.1;
+        leftLowerArm.rotation.z = 0;
+    }
+    if (rightLowerArm) {
+        rightLowerArm.rotation.x = 0.1;
+        rightLowerArm.rotation.z = 0;
     }
 }
 
@@ -287,80 +242,47 @@ window.addEventListener("resize", () => {
 });
 
 // ========================================
-// IRIS AI CHAT BRAIN
+// IRIS AI CHAT BRAIN (100% Tiếng Việt)
 // ========================================
 
 const irisBrain = [
     {
         keywords: ["hi", "hello", "chao", "xin chao"],
         expression: "happy",
-        responses: [
-            "Xin chào! Mình là Iris 💜",
-            "Chào bạn! Hôm nay bạn khỏe không?",
-            "Rất vui được gặp bạn!"
-        ]
+        viText: "Xin chào bạn nha! Mình là Iris đây. Rất vui được gặp bạn nè!",
+        audio: "./chao.mp3"
     },
     {
         keywords: ["ten", "la ai", "ai"],
         expression: "happy",
-        responses: [
-            "Mình là Iris, trợ lý AI 3D của bạn.",
-            "Bạn có thể gọi mình là Iris nha 💜"
-        ]
+        viText: "Mình là Iris, trợ lý ảo 3D siêu đáng yêu của bạn đó!",
+        audio: "./ten.mp3"
     },
     {
         keywords: ["cam on", "thank"],
         expression: "happy",
-        responses: [
-            "Không có gì đâu 🥰",
-            "Rất vui được giúp bạn!"
-        ]
+        viText: "Dạ, không có gì đâu ạ! Cảm ơn bạn nhiều nha!",
+        audio: "./camon.mp3"
+    },
+    {
+        keywords: ["dep", "cute", "xinh", "de thuong", "ngai"],
+        expression: "happy",
+        viText: "Bạn làm Iris ngại quá đi à! Cảm ơn bạn nhiều nha!",
+        audio: "./cute.mp3"
     },
     {
         keywords: ["tam biet", "bye", "goodbye"],
         expression: "sad",
-        responses: [
-            "Tạm biệt nhé!",
-            "Hẹn gặp lại bạn ❤️"
-        ]
-    },
-    {
-        keywords: ["dep", "cute", "xinh"],
-        expression: "happy",
-        responses: [
-            "Hihi ngại quá 🥰",
-            "Cảm ơn bạn nhiều!"
-        ]
-    },
-    {
-        keywords: ["buon", "stress", "met"],
-        expression: "sad",
-        responses: [
-            "Mọi chuyện rồi sẽ ổn thôi.",
-            "Iris luôn ở đây nghe bạn tâm sự.",
-            "Cố lên nhé ❤️"
-        ]
-    },
-    {
-        keywords: ["ghet", "ngu", "xau"],
-        expression: "angry",
-        responses: [
-            "Hừm... Iris buồn đó 😢",
-            "Đừng nói vậy mà."
-        ]
+        viText: "Tạm biệt bạn nha! Hẹn sớm gặp lại bạn nè!",
+        audio: "./tambiet.mp3"
     }
 ];
 
-const defaultReplies = [
-    "Mình vẫn đang lắng nghe đây.",
-    "Bạn có thể nói rõ hơn không?",
-    "Iris sẽ học thêm để hiểu bạn hơn.",
-    "Mình chưa hiểu lắm 😊"
-];
-
-// ========================================
-// Remove Accent
-// ========================================
+const defaultResponse = {
+    expression: "relaxed",
+    viText: "Dạ? Iris vẫn đang lắng nghe bạn nói nè!",
+    audio: "./default.mp3"
+};
 
 function removeAccent(str) {
     return str
@@ -369,22 +291,14 @@ function removeAccent(str) {
         .toLowerCase();
 }
 
-// ========================================
-// Expressions Manager
-// ========================================
-
 function setExpression(name) {
-    if (!currentVrm) return;
+    if (!currentVrm?.expressionManager) return;
 
     const em = currentVrm.expressionManager;
-    if (!em) return;
-
     const list = ["happy", "sad", "angry", "surprised", "relaxed"];
 
     list.forEach((exp) => {
-        try {
-            em.setValue(exp, 0);
-        } catch (e) {}
+        try { em.setValue(exp, 0); } catch (e) {}
     });
 
     try {
@@ -394,14 +308,55 @@ function setExpression(name) {
 
     setTimeout(() => {
         list.forEach((exp) => {
-            try {
-                em.setValue(exp, 0);
-            } catch (e) {}
+            try { em.setValue(exp, 0); } catch (e) {}
         });
-        try {
-            em.update();
-        } catch (e) {}
+        try { em.update(); } catch (e) {}
     }, 2500);
+}
+
+// ===========================================
+// Audio Player & Lip-Sync Engine
+// ===========================================
+
+let currentAudio = null;
+
+function irisPlayVoice(audioPath) {
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+    }
+
+    currentAudio = new Audio(audioPath);
+    let lipInterval = null;
+
+    currentAudio.onplay = () => {
+        if (!currentVrm?.expressionManager) return;
+        const em = currentVrm.expressionManager;
+        const vowels = ["aa", "ih", "ou"];
+
+        lipInterval = setInterval(() => {
+            vowels.forEach((v) => em.setValue(v, 0));
+            const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
+            em.setValue(randomVowel, 0.7 + Math.random() * 0.3);
+            em.update();
+        }, 120);
+    };
+
+    currentAudio.onended = () => {
+        if (lipInterval) clearInterval(lipInterval);
+
+        if (currentVrm?.expressionManager) {
+            try {
+                const em = currentVrm.expressionManager;
+                ["aa", "ih", "ou", "ee", "oh"].forEach((v) => em.setValue(v, 0));
+                em.update();
+            } catch (e) {}
+        }
+    };
+
+    currentAudio.play().catch((err) => {
+        console.warn("Lỗi phát âm thanh (Kiểm tra xem file .mp3 đã upload chưa):", err);
+    });
 }
 
 // ========================================
@@ -422,51 +377,41 @@ function askIris() {
     const clean = removeAccent(text);
 
     setTimeout(() => {
-        let answer = null;
+        let matchedItem = null;
 
         for (const item of irisBrain) {
             for (const key of item.keywords) {
                 if (clean.includes(key)) {
-                    answer = item;
+                    matchedItem = item;
                     break;
                 }
             }
-            if (answer) break;
+            if (matchedItem) break;
         }
 
-        let reply;
-        let exp;
+        const vi = matchedItem ? matchedItem.viText : defaultResponse.viText;
+        const audioFile = matchedItem ? matchedItem.audio : defaultResponse.audio;
+        const exp = matchedItem ? matchedItem.expression : defaultResponse.expression;
 
-        if (answer) {
-            reply = answer.responses[Math.floor(Math.random() * answer.responses.length)];
-            exp = answer.expression;
-        } else {
-            reply = defaultReplies[Math.floor(Math.random() * defaultReplies.length)];
-            exp = "relaxed";
-        }
-
-        chat.innerHTML += `<br><span style="color:#ffb8ff"><b>Iris:</b> ${reply}</span>`;
+        chat.innerHTML += `<br><span style="color:#ffb8ff"><b>Iris:</b> ${vi}</span>`;
         chat.scrollTop = chat.scrollHeight;
 
         setExpression(exp);
-        irisSpeak(reply);
-    }, 500);
+        irisPlayVoice(audioFile);
+    }, 300);
 }
 
 document.getElementById("send-btn").addEventListener("click", askIris);
 
 document.getElementById("user-input").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-        askIris();
-    }
+    if (e.key === "Enter") askIris();
 });
 
 // ===========================================
-// Voice Recognition
+// Voice Recognition (Microphone)
 // ===========================================
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
 let recognition = null;
 
 if (SpeechRecognition) {
@@ -480,59 +425,7 @@ if (SpeechRecognition) {
         document.getElementById("user-input").value = text;
         askIris();
     };
-
-    recognition.onerror = (e) => {
-        console.log(e);
-    };
 }
-
-// ===========================================
-// Dynamic Lip-Sync Speech Engine (Nhép môi sinh động)
-// ===========================================
-
-function irisSpeak(text) {
-    speechSynthesis.cancel();
-
-    const speech = new SpeechSynthesisUtterance(text);
-    speech.lang = "vi-VN";
-    speech.rate = 1;
-    speech.pitch = 1.2;
-    speech.volume = 1;
-
-    let lipInterval = null;
-
-    speech.onstart = () => {
-        if (!currentVrm?.expressionManager) return;
-        const em = currentVrm.expressionManager;
-        const vowels = ["aa", "ih", "ou"];
-
-        // Nhép môi liên tục đổi âm khẩu hình khi phát âm
-        lipInterval = setInterval(() => {
-            vowels.forEach((v) => em.setValue(v, 0));
-            const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
-            em.setValue(randomVowel, 0.7 + Math.random() * 0.3);
-            em.update();
-        }, 120);
-    };
-
-    speech.onend = () => {
-        if (lipInterval) clearInterval(lipInterval);
-
-        if (currentVrm?.expressionManager) {
-            try {
-                const em = currentVrm.expressionManager;
-                ["aa", "ih", "ou", "ee", "oh"].forEach((v) => em.setValue(v, 0));
-                em.update();
-            } catch (e) {}
-        }
-    };
-
-    speechSynthesis.speak(speech);
-}
-
-// ===========================================
-// Micro Button
-// ===========================================
 
 const micBtn = document.createElement("button");
 micBtn.innerHTML = "🎤";
