@@ -83,7 +83,7 @@ loader.load(
         VRMUtils.rotateVRM0(vrm);
 
         vrm.scene.rotation.y = Math.PI;
-        vrm.scene.position.set(0, 0.6, -0.8);
+        vrm.scene.position.set(0, 0.6, -1);
 
         scene.add(vrm.scene);
         currentVrm = vrm;
