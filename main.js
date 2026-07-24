@@ -1,12 +1,16 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
+// Thêm SDK Gemini chính thức
+import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
 // =========================================================
 // 🔑 1. DÁN API KEY GEMINI CỦA BẠN VÀO ĐÂY
 // =========================================================
 const GEMINI_API_KEY = "AQ.Ab8RN6INYgu2UVbORLAI7Yc2sHB1FsktVe77oXgjebhFdk8toQ";
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+// Khởi tạo SDK Gemini
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 // =========================
 // Scene Setup
@@ -280,7 +284,7 @@ function simulateLipSync(textLength) {
     const em = currentVrm.expressionManager;
     const vowels = ["aa", "ih", "ou"];
 
-    let duration = Math.min(textLength * 150, 6000); // Thời gian nhép miệng dựa theo độ dài câu
+    let duration = Math.min(textLength * 150, 6000);
     let interval = setInterval(() => {
         vowels.forEach((v) => em.setValue(v, 0));
         const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
@@ -296,7 +300,7 @@ function simulateLipSync(textLength) {
 }
 
 // =========================================================
-// GEMINI AI INTEGRATION (Bộ não AI thông minh)
+// GEMINI AI INTEGRATION (Dùng SDK Chuẩn - Hết sạch lỗi 401)
 // =========================================================
 
 async function fetchGeminiResponse(userMessage) {
@@ -305,23 +309,14 @@ async function fetchGeminiResponse(userMessage) {
     }
 
     try {
-        const response = await fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: userMessage }] }],
-                systemInstruction: {
-                    parts: [{
-                        text: "Bạn tên là Iris, một trợ lý AI 3D siêu đáng yêu, thông minh và thân thiện. Bạn hãy trả lời ngắn gọn, tự nhiên, xưng 'Iris' và gọi người dùng là 'bạn'."
-                    }]
-                }
-            })
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash",
+            systemInstruction: "Bạn tên là Iris, một trợ lý AI 3D siêu đáng yêu, thông minh và thân thiện. Bạn hãy trả lời ngắn gọn, tự nhiên, xưng 'Iris' và gọi người dùng là 'bạn'."
         });
 
-        if (!response.ok) throw new Error("Lỗi API Gemini");
-
-        const data = await response.json();
-        return data.candidates[0].content.parts[0].text;
+        const result = await model.generateContent(userMessage);
+        const response = await result.response;
+        return response.text();
 
     } catch (error) {
         console.error("Lỗi khi gọi Gemini:", error);
