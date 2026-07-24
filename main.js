@@ -300,7 +300,7 @@ function simulateLipSync(textLength) {
 }
 
 // =========================================================
-// GEMINI AI INTEGRATION (Dùng SDK Chuẩn - Hết sạch lỗi 401)
+// GEMINI AI INTEGRATION (Đã dùng Model gemini-2.5-flash)
 // =========================================================
 
 async function fetchGeminiResponse(userMessage) {
@@ -310,7 +310,7 @@ async function fetchGeminiResponse(userMessage) {
 
     try {
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash", // Cập nhật tên model mới nhất
             systemInstruction: "Bạn tên là Iris, một trợ lý AI 3D siêu đáng yêu, thông minh và thân thiện. Bạn hãy trả lời ngắn gọn, tự nhiên, xưng 'Iris' và gọi người dùng là 'bạn'."
         });
 
