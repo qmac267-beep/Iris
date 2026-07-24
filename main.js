@@ -2,6 +2,12 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
 
+// =========================================================
+// 🔑 1. DÁN API KEY GEMINI CỦA BẠN VÀO ĐÂY
+// =========================================================
+const GEMINI_API_KEY = "AQ.Ab8RN6JAKu_d6ykpt7-oB6dGE9ILzmLrsOXOMj5HO6yFmHrplQ";
+const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
 // =========================
 // Scene Setup
 // =========================
@@ -241,55 +247,9 @@ window.addEventListener("resize", () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// ========================================
-// IRIS AI CHAT BRAIN (100% Tiếng Việt)
-// ========================================
-
-const irisBrain = [
-    {
-        keywords: ["hi", "hello", "chao", "xin chao"],
-        expression: "happy",
-        viText: "Xin chào bạn nha! Mình là Iris đây. Rất vui được gặp bạn nè!",
-        audio: "./chao.mp3"
-    },
-    {
-        keywords: ["ten", "la ai", "ai"],
-        expression: "happy",
-        viText: "Mình là Iris, trợ lý ảo 3D siêu đáng yêu của bạn đó!",
-        audio: "./ten.mp3"
-    },
-    {
-        keywords: ["cam on", "thank"],
-        expression: "happy",
-        viText: "Dạ, không có gì đâu ạ! Cảm ơn bạn nhiều nha!",
-        audio: "./camon.mp3"
-    },
-    {
-        keywords: ["dep", "cute", "xinh", "de thuong", "ngai"],
-        expression: "happy",
-        viText: "Bạn làm Iris ngại quá đi à! Cảm ơn bạn nhiều nha!",
-        audio: "./cute.mp3"
-    },
-    {
-        keywords: ["tam biet", "bye", "goodbye"],
-        expression: "sad",
-        viText: "Tạm biệt bạn nha! Hẹn sớm gặp lại bạn nè!",
-        audio: "./tambiet.mp3"
-    }
-];
-
-const defaultResponse = {
-    expression: "relaxed",
-    viText: "Dạ? Iris vẫn đang lắng nghe bạn nói nè!",
-    audio: "./default.mp3"
-};
-
-function removeAccent(str) {
-    return str
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase();
-}
+// =========================================
+// EXPRESSION & MOUTH CONTROL (Gương mặt)
+// =========================================
 
 function setExpression(name) {
     if (!currentVrm?.expressionManager) return;
@@ -311,94 +271,99 @@ function setExpression(name) {
             try { em.setValue(exp, 0); } catch (e) {}
         });
         try { em.update(); } catch (e) {}
-    }, 2500);
+    }, 3500);
 }
 
-// ===========================================
-// Audio Player & Lip-Sync Engine
-// ===========================================
+// Giả lập cử động khuôn miệng khi nói
+function simulateLipSync(textLength) {
+    if (!currentVrm?.expressionManager) return;
+    const em = currentVrm.expressionManager;
+    const vowels = ["aa", "ih", "ou"];
 
-let currentAudio = null;
+    let duration = Math.min(textLength * 150, 6000); // Thời gian nhép miệng dựa theo độ dài câu
+    let interval = setInterval(() => {
+        vowels.forEach((v) => em.setValue(v, 0));
+        const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
+        em.setValue(randomVowel, 0.6 + Math.random() * 0.4);
+        em.update();
+    }, 120);
 
-function irisPlayVoice(audioPath) {
-    if (currentAudio) {
-        currentAudio.pause();
-        currentAudio.currentTime = 0;
+    setTimeout(() => {
+        clearInterval(interval);
+        vowels.forEach((v) => em.setValue(v, 0));
+        em.update();
+    }, duration);
+}
+
+// =========================================================
+// GEMINI AI INTEGRATION (Bộ não AI thông minh)
+// =========================================================
+
+async function fetchGeminiResponse(userMessage) {
+    if (!GEMINI_API_KEY || GEMINI_API_KEY.includes("DÁN_MÃ_API_KEY")) {
+        return "Bạn chưa dán API Key vào file main.js kìa!";
     }
 
-    currentAudio = new Audio(audioPath);
-    let lipInterval = null;
+    try {
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: userMessage }] }],
+                systemInstruction: {
+                    parts: [{
+                        text: "Bạn tên là Iris, một trợ lý AI 3D siêu đáng yêu, thông minh và thân thiện. Bạn hãy trả lời ngắn gọn, tự nhiên, xưng 'Iris' và gọi người dùng là 'bạn'."
+                    }]
+                }
+            })
+        });
 
-    currentAudio.onplay = () => {
-        if (!currentVrm?.expressionManager) return;
-        const em = currentVrm.expressionManager;
-        const vowels = ["aa", "ih", "ou"];
+        if (!response.ok) throw new Error("Lỗi API Gemini");
 
-        lipInterval = setInterval(() => {
-            vowels.forEach((v) => em.setValue(v, 0));
-            const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
-            em.setValue(randomVowel, 0.7 + Math.random() * 0.3);
-            em.update();
-        }, 120);
-    };
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text;
 
-    currentAudio.onended = () => {
-        if (lipInterval) clearInterval(lipInterval);
-
-        if (currentVrm?.expressionManager) {
-            try {
-                const em = currentVrm.expressionManager;
-                ["aa", "ih", "ou", "ee", "oh"].forEach((v) => em.setValue(v, 0));
-                em.update();
-            } catch (e) {}
-        }
-    };
-
-    currentAudio.play().catch((err) => {
-        console.warn("Lỗi phát âm thanh (Kiểm tra xem file .mp3 đã upload chưa):", err);
-    });
+    } catch (error) {
+        console.error("Lỗi khi gọi Gemini:", error);
+        return "Iris đang gặp chút sự cố kết nối, bạn thử lại sau nha!";
+    }
 }
 
 // ========================================
-// Chat Logic
+// Chat Logic & Bắt sự kiện
 // ========================================
 
-function askIris() {
+async function askIris() {
     const input = document.getElementById("user-input");
     const chat = document.getElementById("chat-box");
     const text = input.value.trim();
 
     if (text === "") return;
 
+    // 1. Hiển thị tin nhắn người dùng
     chat.innerHTML += `<br><b>Bạn:</b> ${text}`;
     chat.scrollTop = chat.scrollHeight;
     input.value = "";
 
-    const clean = removeAccent(text);
+    // Hiển thị trạng thái đang suy nghĩ
+    const loadingId = "loading-" + Date.now();
+    chat.innerHTML += `<br><span id="${loadingId}" style="color:#aaa"><i>Iris đang suy nghĩ...</i></span>`;
+    chat.scrollTop = chat.scrollHeight;
 
-    setTimeout(() => {
-        let matchedItem = null;
+    // 2. Gọi Gemini AI lấy câu trả lời
+    const aiReply = await fetchGeminiResponse(text);
 
-        for (const item of irisBrain) {
-            for (const key of item.keywords) {
-                if (clean.includes(key)) {
-                    matchedItem = item;
-                    break;
-                }
-            }
-            if (matchedItem) break;
-        }
+    // Xóa dòng "đang suy nghĩ"
+    const loadingEl = document.getElementById(loadingId);
+    if (loadingEl) loadingEl.remove();
 
-        const vi = matchedItem ? matchedItem.viText : defaultResponse.viText;
-        const audioFile = matchedItem ? matchedItem.audio : defaultResponse.audio;
-        const exp = matchedItem ? matchedItem.expression : defaultResponse.expression;
+    // 3. Hiển thị câu trả lời của Iris
+    chat.innerHTML += `<br><span style="color:#ffb8ff"><b>Iris:</b> ${aiReply}</span>`;
+    chat.scrollTop = chat.scrollHeight;
 
-        chat.innerHTML += `<br><span style="color:#ffb8ff"><b>Iris:</b> ${vi}</span>`;
-        chat.scrollTop = chat.scrollHeight;
-
-        setExpression(exp);
-        irisPlayVoice(audioFile);
-    }, 300);
+    // 4. Cho nhân vật 3D biểu cảm & cử động miệng nhép nói
+    setExpression("happy");
+    simulateLipSync(aiReply.length);
 }
 
 document.getElementById("send-btn").addEventListener("click", askIris);
