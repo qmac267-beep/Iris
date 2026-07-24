@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
-// Thêm SDK Gemini chính thức
 import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
 // =========================================================
@@ -11,6 +10,9 @@ const GEMINI_API_KEY = "AQ.Ab8RN6INYgu2UVbORLAI7Yc2sHB1FsktVe77oXgjebhFdk8toQ";
 
 // Khởi tạo SDK Gemini
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+// Quản lý lịch sử trò chuyện (Giúp Iris thông minh, nhớ bối cảnh)
+let chatHistory = [];
 
 // =========================
 // Scene Setup
@@ -252,7 +254,7 @@ window.addEventListener("resize", () => {
 });
 
 // =========================================
-// EXPRESSION & MOUTH CONTROL (Gương mặt)
+// EXPRESSION & MOUTH CONTROL (Gương mặt thông minh)
 // =========================================
 
 function setExpression(name) {
@@ -275,7 +277,21 @@ function setExpression(name) {
             try { em.setValue(exp, 0); } catch (e) {}
         });
         try { em.update(); } catch (e) {}
-    }, 3500);
+    }, 4000);
+}
+
+// Tự động chọn biểu cảm dựa trên cảm xúc văn bản
+function detectEmotionAndSet(text) {
+    const lower = text.toLowerCase();
+    if (lower.includes("buồn") || lower.includes("tiếc") || lower.includes("xin lỗi")) {
+        setExpression("sad");
+    } else if (lower.includes("ồ") || lower.includes("thật sao") || lower.includes("bất ngờ")) {
+        setExpression("surprised");
+    } else if (lower.includes("giận") || lower.includes("ghét")) {
+        setExpression("angry");
+    } else {
+        setExpression("happy");
+    }
 }
 
 // Giả lập cử động khuôn miệng khi nói
@@ -284,13 +300,13 @@ function simulateLipSync(textLength) {
     const em = currentVrm.expressionManager;
     const vowels = ["aa", "ih", "ou"];
 
-    let duration = Math.min(textLength * 150, 6000);
+    let duration = Math.min(textLength * 130, 7000);
     let interval = setInterval(() => {
         vowels.forEach((v) => em.setValue(v, 0));
         const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
         em.setValue(randomVowel, 0.6 + Math.random() * 0.4);
         em.update();
-    }, 120);
+    }, 110);
 
     setTimeout(() => {
         clearInterval(interval);
@@ -300,7 +316,7 @@ function simulateLipSync(textLength) {
 }
 
 // =========================================================
-// GEMINI AI INTEGRATION (Đã dùng Model gemini-2.5-flash)
+// GEMINI AI SMART ENGINE (Tự động khắc phục mọi loại lỗi)
 // =========================================================
 
 async function fetchGeminiResponse(userMessage) {
@@ -308,19 +324,56 @@ async function fetchGeminiResponse(userMessage) {
         return "Bạn chưa dán API Key vào file main.js kìa!";
     }
 
+    const systemPrompt = "Bạn tên là Iris, một trợ lý AI 3D siêu đáng yêu, thông minh và thân thiện. Bạn hãy trả lời tự nhiên, ngắn gọn (1-3 câu), xưng 'Iris' và gọi người dùng là 'bạn'. Không dùng ký tự Markdown như ** hoặc #.";
+
+    // Danh sách các model fallback dự phòng theo thứ tự từ mới tới cũ
+    const candidateModels = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+
+    // 1. Thử gọi từng model thông qua SDK
+    for (const modelName of candidateModels) {
+        try {
+            const model = genAI.getGenerativeModel({
+                model: modelName,
+                systemInstruction: systemPrompt
+            });
+
+            // Gửi tin nhắn kèm trí nhớ câu thoại cũ
+            const chat = model.startChat({
+                history: chatHistory
+            });
+
+            const result = await chat.sendMessage(userMessage);
+            const response = await result.response;
+            let text = response.text();
+
+            // Cập nhật bộ nhớ trò chuyện
+            chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
+            chatHistory.push({ role: "model", parts: [{ text: text }] });
+
+            // Giới hạn lịch sử lưu tối đa 10 câu gần nhất cho nhẹ
+            if (chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
+
+            return text.replace(/[*#]/g, ""); // Dọn dẹp ký tự Markdown
+        } catch (e) {
+            console.warn(`Model ${modelName} bị lỗi, đang tự động chuyển model tiếp theo...`, e);
+        }
+    }
+
+    // 2. Nếu tất cả SDK model thất bại, sử dụng fallback REST API direct
     try {
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash", // Cập nhật tên model mới nhất
-            systemInstruction: "Bạn tên là Iris, một trợ lý AI 3D siêu đáng yêu, thông minh và thân thiện. Bạn hãy trả lời ngắn gọn, tự nhiên, xưng 'Iris' và gọi người dùng là 'bạn'."
+        const directUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+        const directRes = await fetch(directUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: systemPrompt + "\n\nNgười dùng: " + userMessage }] }]
+            })
         });
-
-        const result = await model.generateContent(userMessage);
-        const response = await result.response;
-        return response.text();
-
-    } catch (error) {
-        console.error("Lỗi khi gọi Gemini:", error);
-        return "Iris đang gặp chút sự cố kết nối, bạn thử lại sau nha!";
+        const data = await directRes.json();
+        return data.candidates[0].content.parts[0].text.replace(/[*#]/g, "");
+    } catch (err) {
+        console.error("Tất cả các kết nối AI đều lỗi:", err);
+        return "Iris đang bị gián đoạn mạng một chút, bạn chờ Iris vài giây rồi nhắn lại nha!";
     }
 }
 
@@ -345,7 +398,7 @@ async function askIris() {
     chat.innerHTML += `<br><span id="${loadingId}" style="color:#aaa"><i>Iris đang suy nghĩ...</i></span>`;
     chat.scrollTop = chat.scrollHeight;
 
-    // 2. Gọi Gemini AI lấy câu trả lời
+    // 2. Gọi Gemini AI siêu thông minh
     const aiReply = await fetchGeminiResponse(text);
 
     // Xóa dòng "đang suy nghĩ"
@@ -356,8 +409,8 @@ async function askIris() {
     chat.innerHTML += `<br><span style="color:#ffb8ff"><b>Iris:</b> ${aiReply}</span>`;
     chat.scrollTop = chat.scrollHeight;
 
-    // 4. Cho nhân vật 3D biểu cảm & cử động miệng nhép nói
-    setExpression("happy");
+    // 4. Cho nhân vật 3D biểu cảm & nhép miệng thông minh
+    detectEmotionAndSet(aiReply);
     simulateLipSync(aiReply.length);
 }
 
