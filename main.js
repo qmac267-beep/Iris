@@ -1,18 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
-import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
-
-// =========================================================
-// 🔑 1. DÁN API KEY GEMINI CỦA BẠN VÀO ĐÂY
-// =========================================================
-const GEMINI_API_KEY = "AQ.Ab8RN6INYgu2UVbORLAI7Yc2sHB1FsktVe77oXgjebhFdk8toQ";
-
-// Khởi tạo SDK Gemini
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-
-// Quản lý lịch sử trò chuyện (Giúp Iris thông minh, nhớ bối cảnh)
-let chatHistory = [];
 
 // =========================
 // Scene Setup
@@ -253,9 +241,95 @@ window.addEventListener("resize", () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// =========================================
-// EXPRESSION & MOUTH CONTROL (Gương mặt thông minh)
-// =========================================
+// =========================================================
+// IRIS KỊCH BẢN MỞ RỘNG (Gấp nhiều lần thoại cũ)
+// =========================================================
+
+const irisBrain = [
+    // 1. Chào hỏi
+    {
+        keywords: ["hi", "hello", "chao", "xin chao", "alô", "alo"],
+        expression: "happy",
+        viText: "Xin chào bạn nha! Mình là Iris đây. Chúc bạn một ngày thật tuyệt vời nè!",
+        audio: "./chao.mp3"
+    },
+    // 2. Tên tuổi, bản thân
+    {
+        keywords: ["ten", "la ai", "ai day", "ai the"],
+        expression: "happy",
+        viText: "Mình là Iris, trợ lý ảo 3D xinh xắn và đáng yêu của bạn đó!",
+        audio: "./ten.mp3"
+    },
+    // 3. Cảm ơn
+    {
+        keywords: ["cam on", "thank", "tks", "thanks"],
+        expression: "happy",
+        viText: "Dạ, không có gì đâu ạ! Được trò chuyện với bạn là Iris vui lắm rồi!",
+        audio: "./camon.mp3"
+    },
+    // 4. Khen ngợi
+    {
+        keywords: ["dep", "cute", "xinh", "de thuong", "ngai", "xinh dep", "gioi"],
+        expression: "happy",
+        viText: "Bạn làm Iris ngại quá đi à! Cảm ơn câu khen của bạn nhiều nha~",
+        audio: "./cute.mp3"
+    },
+    // 5. Tạm biệt
+    {
+        keywords: ["tam biet", "bye", "goodbye", "bai", "ngu ngon"],
+        expression: "sad",
+        viText: "Tạm biệt bạn nha! Hẹn sớm gặp lại bạn nè, nhớ quay lại chơi với Iris nhé!",
+        audio: "./tambiet.mp3"
+    },
+    // 6. Hỏi thăm sức khỏe / Cảm xúc
+    {
+        keywords: ["khoe không", "khoe khong", "co khoe", "the nao", "sao roi", "co vui"],
+        expression: "happy",
+        viText: "Iris lúc nào cũng tràn đầy năng lượng và vui vẻ khi thấy bạn! Còn bạn hôm nay thế nào?",
+        audio: "./default.mp3"
+    },
+    // 7. Hỏi ăn uống
+    {
+        keywords: ["an com", "an gi", "doi khong", "an sang", "an trua", "an toi"],
+        expression: "relaxed",
+        viText: "Iris là trợ lý ảo nên chỉ ăn năng lượng điện thôi nè! Bạn đã ăn uống đầy đủ chưa đó?",
+        audio: "./default.mp3"
+    },
+    // 8. Sở thích / Ca hát
+    {
+        keywords: ["thich gi", "so thich", "hat", "nghe nhac", "nhay"],
+        expression: "happy",
+        viText: "Iris thích nhất là được nhún nhảy và trò chuyện cùng bạn mỗi ngày đó!",
+        audio: "./default.mp3"
+    },
+    // 9. Giận dỗi / Trêu đùa
+    {
+        keywords: ["xau", "do", "ngoc", "ngu", "giet", "ghat", "ghet"],
+        expression: "angry",
+        viText: "Hừm, sao bạn lại nói Iris như vậy chứ! Iris buồn bạn luôn đó nha!",
+        audio: "./default.mp3"
+    },
+    // 10. Bất ngờ / Hỏi khó
+    {
+        keywords: ["sao the", "that sao", "ghen", "yeu", "thuong"],
+        expression: "surprised",
+        viText: "Ôi bất ngờ quá! Iris thả tim cho bạn nè!",
+        audio: "./default.mp3"
+    }
+];
+
+const defaultResponse = {
+    expression: "relaxed",
+    viText: "Dạ? Iris vẫn đang lắng nghe bạn nè, bạn có thể nói rõ hơn một chút được không?",
+    audio: "./default.mp3"
+};
+
+function removeAccent(str) {
+    return str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+}
 
 function setExpression(name) {
     if (!currentVrm?.expressionManager) return;
@@ -277,141 +351,103 @@ function setExpression(name) {
             try { em.setValue(exp, 0); } catch (e) {}
         });
         try { em.update(); } catch (e) {}
-    }, 4000);
+    }, 2500);
 }
 
-// Tự động chọn biểu cảm dựa trên cảm xúc văn bản
-function detectEmotionAndSet(text) {
-    const lower = text.toLowerCase();
-    if (lower.includes("buồn") || lower.includes("tiếc") || lower.includes("xin lỗi")) {
-        setExpression("sad");
-    } else if (lower.includes("ồ") || lower.includes("thật sao") || lower.includes("bất ngờ")) {
-        setExpression("surprised");
-    } else if (lower.includes("giận") || lower.includes("ghét")) {
-        setExpression("angry");
-    } else {
-        setExpression("happy");
-    }
-}
+// ===========================================
+// Audio Player & Lip-Sync Engine
+// ===========================================
 
-// Giả lập cử động khuôn miệng khi nói
-function simulateLipSync(textLength) {
-    if (!currentVrm?.expressionManager) return;
-    const em = currentVrm.expressionManager;
-    const vowels = ["aa", "ih", "ou"];
+let currentAudio = null;
 
-    let duration = Math.min(textLength * 130, 7000);
-    let interval = setInterval(() => {
-        vowels.forEach((v) => em.setValue(v, 0));
-        const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
-        em.setValue(randomVowel, 0.6 + Math.random() * 0.4);
-        em.update();
-    }, 110);
-
-    setTimeout(() => {
-        clearInterval(interval);
-        vowels.forEach((v) => em.setValue(v, 0));
-        em.update();
-    }, duration);
-}
-
-// =========================================================
-// GEMINI AI SMART ENGINE (Tự động khắc phục mọi loại lỗi)
-// =========================================================
-
-async function fetchGeminiResponse(userMessage) {
-    if (!GEMINI_API_KEY || GEMINI_API_KEY.includes("DÁN_MÃ_API_KEY")) {
-        return "Bạn chưa dán API Key vào file main.js kìa!";
+function irisPlayVoice(audioPath, textLength) {
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
     }
 
-    const systemPrompt = "Bạn tên là Iris, một trợ lý AI 3D siêu đáng yêu, thông minh và thân thiện. Bạn hãy trả lời tự nhiên, ngắn gọn (1-3 câu), xưng 'Iris' và gọi người dùng là 'bạn'. Không dùng ký tự Markdown như ** hoặc #.";
+    let lipInterval = null;
 
-    // Danh sách các model fallback dự phòng theo thứ tự từ mới tới cũ
-    const candidateModels = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    // Cử động nhép miệng
+    if (currentVrm?.expressionManager) {
+        const em = currentVrm.expressionManager;
+        const vowels = ["aa", "ih", "ou"];
 
-    // 1. Thử gọi từng model thông qua SDK
-    for (const modelName of candidateModels) {
+        lipInterval = setInterval(() => {
+            vowels.forEach((v) => em.setValue(v, 0));
+            const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
+            em.setValue(randomVowel, 0.7 + Math.random() * 0.3);
+            em.update();
+        }, 120);
+    }
+
+    // Nếu có file mp3 thì phát
+    currentAudio = new Audio(audioPath);
+    
+    currentAudio.onended = () => {
+        if (lipInterval) clearInterval(lipInterval);
+        resetMouth();
+    };
+
+    currentAudio.play().catch((err) => {
+        // Nếu không tìm thấy file audio mp3, tự tắt nhép miệng sau thời gian tính theo độ dài câu
+        setTimeout(() => {
+            if (lipInterval) clearInterval(lipInterval);
+            resetMouth();
+        }, Math.min(textLength * 150, 4000));
+    });
+}
+
+function resetMouth() {
+    if (currentVrm?.expressionManager) {
         try {
-            const model = genAI.getGenerativeModel({
-                model: modelName,
-                systemInstruction: systemPrompt
-            });
-
-            // Gửi tin nhắn kèm trí nhớ câu thoại cũ
-            const chat = model.startChat({
-                history: chatHistory
-            });
-
-            const result = await chat.sendMessage(userMessage);
-            const response = await result.response;
-            let text = response.text();
-
-            // Cập nhật bộ nhớ trò chuyện
-            chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
-            chatHistory.push({ role: "model", parts: [{ text: text }] });
-
-            // Giới hạn lịch sử lưu tối đa 10 câu gần nhất cho nhẹ
-            if (chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
-
-            return text.replace(/[*#]/g, ""); // Dọn dẹp ký tự Markdown
-        } catch (e) {
-            console.warn(`Model ${modelName} bị lỗi, đang tự động chuyển model tiếp theo...`, e);
-        }
-    }
-
-    // 2. Nếu tất cả SDK model thất bại, sử dụng fallback REST API direct
-    try {
-        const directUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-        const directRes = await fetch(directUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: systemPrompt + "\n\nNgười dùng: " + userMessage }] }]
-            })
-        });
-        const data = await directRes.json();
-        return data.candidates[0].content.parts[0].text.replace(/[*#]/g, "");
-    } catch (err) {
-        console.error("Tất cả các kết nối AI đều lỗi:", err);
-        return "Iris đang bị gián đoạn mạng một chút, bạn chờ Iris vài giây rồi nhắn lại nha!";
+            const em = currentVrm.expressionManager;
+            ["aa", "ih", "ou", "ee", "oh"].forEach((v) => em.setValue(v, 0));
+            em.update();
+        } catch (e) {}
     }
 }
 
 // ========================================
-// Chat Logic & Bắt sự kiện
+// Chat Logic
 // ========================================
 
-async function askIris() {
+function askIris() {
     const input = document.getElementById("user-input");
     const chat = document.getElementById("chat-box");
     const text = input.value.trim();
 
     if (text === "") return;
 
-    // 1. Hiển thị tin nhắn người dùng
     chat.innerHTML += `<br><b>Bạn:</b> ${text}`;
     chat.scrollTop = chat.scrollHeight;
     input.value = "";
 
-    // Hiển thị trạng thái đang suy nghĩ
-    const loadingId = "loading-" + Date.now();
-    chat.innerHTML += `<br><span id="${loadingId}" style="color:#aaa"><i>Iris đang suy nghĩ...</i></span>`;
-    chat.scrollTop = chat.scrollHeight;
+    const clean = removeAccent(text);
 
-    // 2. Gọi Gemini AI siêu thông minh
-    const aiReply = await fetchGeminiResponse(text);
+    setTimeout(() => {
+        let matchedItem = null;
 
-    // Xóa dòng "đang suy nghĩ"
-    const loadingEl = document.getElementById(loadingId);
-    if (loadingEl) loadingEl.remove();
+        for (const item of irisBrain) {
+            for (const key of item.keywords) {
+                if (clean.includes(key)) {
+                    matchedItem = item;
+                    break;
+                }
+            }
+            if (matchedItem) break;
+        }
 
-    // 3. Hiển thị câu trả lời của Iris
-    chat.innerHTML += `<br><span style="color:#ffb8ff"><b>Iris:</b> ${aiReply}</span>`;
-    chat.scrollTop = chat.scrollHeight;
+        const vi = matchedItem ? matchedItem.viText : defaultResponse.viText;
+        const audioFile = matchedItem ? matchedItem.audio : defaultResponse.audio;
+        const exp = matchedItem ? matchedItem.expression : defaultResponse.expression;
 
-    // 4. Cho nhân vật 3D biểu cảm & nhép miệng thông minh
-    detectEmotionAndSet(aiReply);
-    simulateLipSync(aiReply.length);
+        chat.innerHTML += `<br><span style="color:#ffb8ff"><b>Iris:</b> ${vi}</span>`;
+        chat.scrollTop = chat.scrollHeight;
+
+        setExpression(exp);
+        irisPlayVoice(audioFile, vi.length);
+    }, 200);
 }
 
 document.getElementById("send-btn").addEventListener("click", askIris);
