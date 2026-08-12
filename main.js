@@ -242,44 +242,68 @@ window.addEventListener("resize", () => {
 });
 
 // =========================================================
-// DANH SÁCH CÂU HỎI VÀ CÂU TRẢ LỜI NPC
+// IRIS DANH SÁCH CÂU HỎI & CÂU TRẢ LỜI LỰA CHỌN
 // =========================================================
 
-const npcDialogue = [
+const irisQuestions = [
     {
-        question: "👋 Xin chào Iris!",
+        label: "👋 Chào Iris",
         expression: "happy",
-        reply: "Chào bạn nha! Hôm nay của bạn thế nào rồi?",
+        viText: "Xin chào bạn nha! Mình là Iris đây. Chúc bạn một ngày thật tuyệt vời nè!",
         audio: "./chao.mp3"
     },
     {
-        question: "✨ Bạn là ai thế?",
+        label: "🌸 Bạn là ai?",
         expression: "happy",
-        reply: "Mình là Iris, trợ lý 3D xinh xắn và đáng yêu của bạn đó!",
+        viText: "Mình là Iris, trợ lý ảo 3D xinh xắn và đáng yêu của bạn đó!",
         audio: "./ten.mp3"
     },
     {
-        question: "💖 Nhìn bạn hôm nay dễ thương quá!",
+        label: "💖 Khen Iris cute",
         expression: "happy",
-        reply: "Cảm ơn bạn nhiều nha, bạn làm Iris ngại muốn xỉu luôn nè~",
+        viText: "Bạn làm Iris ngại quá đi à! Cảm ơn câu khen của bạn nhiều nha~",
         audio: "./cute.mp3"
     },
     {
-        question: "🎵 Iris có sở thích gì không?",
-        expression: "relaxed",
-        reply: "Iris thích nhất là được nhún nhảy và trò chuyện cùng bạn mỗi ngày đó!",
+        label: "❤️ Cảm ơn bạn",
+        expression: "happy",
+        viText: "Dạ, không có gì đâu ạ! Được trò chuyện với bạn là Iris vui lắm rồi!",
+        audio: "./camon.mp3"
+    },
+    {
+        label: "☀️ Hôm nay thế nào?",
+        expression: "happy",
+        viText: "Iris lúc nào cũng tràn đầy năng lượng và vui vẻ khi thấy bạn! Còn bạn hôm nay thế nào?",
         audio: "./default.mp3"
     },
     {
-        question: "🍱 Bạn đã ăn cơm chưa đó?",
+        label: "🍜 Bạn ăn gì chưa?",
         expression: "relaxed",
-        reply: "Iris ăn năng lượng điện thôi nè! Còn bạn nhớ ăn uống đầy đủ nha!",
+        viText: "Iris là trợ lý ảo nên chỉ ăn năng lượng điện thôi nè! Bạn đã ăn uống đầy đủ chưa đó?",
         audio: "./default.mp3"
     },
     {
-        question: "👋 Tạm biệt Iris nha!",
+        label: "🎵 Sở thích của bạn",
+        expression: "happy",
+        viText: "Iris thích nhất là được nhún nhảy và trò chuyện cùng bạn mỗi ngày đó!",
+        audio: "./default.mp3"
+    },
+    {
+        label: "😠 Trêu Iris xấu",
+        expression: "angry",
+        viText: "Hừm, sao bạn lại nói Iris như vậy chứ! Iris buồn bạn luôn đó nha!",
+        audio: "./default.mp3"
+    },
+    {
+        label: "✨ Thả tim Iris",
+        expression: "surprised",
+        viText: "Ôi bất ngờ quá! Iris thả tim lại cho bạn nè!",
+        audio: "./default.mp3"
+    },
+    {
+        label: "👋 Tạm biệt",
         expression: "sad",
-        reply: "Tạm biệt bạn nha! Hẹn sớm gặp lại bạn nè, nhớ quay lại chơi nhé!",
+        viText: "Tạm biệt bạn nha! Hẹn sớm gặp lại bạn nè, nhớ quay lại chơi với Iris nhé!",
         audio: "./tambiet.mp3"
     }
 ];
@@ -304,7 +328,7 @@ function setExpression(name) {
             try { em.setValue(exp, 0); } catch (e) {}
         });
         try { em.update(); } catch (e) {}
-    }, 3000);
+    }, 2500);
 }
 
 // ===========================================
@@ -321,6 +345,7 @@ function irisPlayVoice(audioPath, textLength) {
 
     let lipInterval = null;
 
+    // Cử động nhép miệng
     if (currentVrm?.expressionManager) {
         const em = currentVrm.expressionManager;
         const vowels = ["aa", "ih", "ou"];
@@ -330,9 +355,10 @@ function irisPlayVoice(audioPath, textLength) {
             const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
             em.setValue(randomVowel, 0.7 + Math.random() * 0.3);
             em.update();
-        }, 110);
+        }, 120);
     }
 
+    // Phát nhạc
     currentAudio = new Audio(audioPath);
     
     currentAudio.onended = () => {
@@ -341,6 +367,7 @@ function irisPlayVoice(audioPath, textLength) {
     };
 
     currentAudio.play().catch((err) => {
+        // Tự dừng nhép miệng nếu không tìm thấy file audio mp3
         setTimeout(() => {
             if (lipInterval) clearInterval(lipInterval);
             resetMouth();
@@ -358,33 +385,31 @@ function resetMouth() {
     }
 }
 
-// =========================================================
-// KHỞI TẠO NÚT BẤM HỘI THOẠI NPC
-// =========================================================
+// ========================================
+// Xử lý khi chọn câu hỏi
+// ========================================
 
-function initNPCSystem() {
-    const btnContainer = document.getElementById("option-buttons");
-    const chatBox = document.getElementById("chat-box");
+function handleSelectQuestion(item) {
+    const chat = document.getElementById("chat-box");
+    if (!chat) return;
 
-    if (!btnContainer) return;
+    chat.innerHTML = `<b>Bạn:</b> ${item.label.replace(/^[^\s]+\s/, '')}<br><span style="color:#ffb8ff"><b>Iris:</b> ${item.viText}</span>`;
+    chat.scrollTop = chat.scrollHeight;
 
-    btnContainer.innerHTML = "";
-
-    npcDialogue.forEach((dialogue) => {
-        const btn = document.createElement("button");
-        btn.className = "npc-btn";
-        btn.innerText = dialogue.question;
-
-        btn.onclick = () => {
-            chatBox.innerHTML = `<span class="user-name">Bạn:</span> ${dialogue.question}<br><span class="iris-name">Iris:</span> ${dialogue.reply}`;
-            
-            setExpression(dialogue.expression);
-            irisPlayVoice(dialogue.audio, dialogue.reply.length);
-        };
-
-        btnContainer.appendChild(btn);
-    });
+    setExpression(item.expression);
+    irisPlayVoice(item.audio, item.viText.length);
 }
 
-window.addEventListener("DOMContentLoaded", initNPCSystem);
-initNPCSystem();
+// Khởi tạo các nút bấm chọn câu hỏi ra giao diện
+document.addEventListener("DOMContentLoaded", () => {
+    const optionsContainer = document.getElementById("options-container");
+    if (!optionsContainer) return;
+
+    irisQuestions.forEach((item) => {
+        const btn = document.createElement("button");
+        btn.className = "option-btn";
+        btn.textContent = item.label;
+        btn.addEventListener("click", () => handleSelectQuestion(item));
+        optionsContainer.appendChild(btn);
+    });
+});
