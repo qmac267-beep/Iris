@@ -242,94 +242,47 @@ window.addEventListener("resize", () => {
 });
 
 // =========================================================
-// IRIS KỊCH BẢN MỞ RỘNG (Gấp nhiều lần thoại cũ)
+// DANH SÁCH CÂU HỎI VÀ CÂU TRẢ LỜI NPC (Dễ dàng thêm bớt)
 // =========================================================
 
-const irisBrain = [
-    // 1. Chào hỏi
+const npcDialogue = [
     {
-        keywords: ["hi", "hello", "chao", "xin chao", "alô", "alo"],
+        question: "👋 Xin chào Iris!",
         expression: "happy",
-        viText: "Xin chào bạn nha! Mình là Iris đây. Chúc bạn một ngày thật tuyệt vời nè!",
+        reply: "Chào bạn nha! Hôm nay của bạn thế nào rồi?",
         audio: "./chao.mp3"
     },
-    // 2. Tên tuổi, bản thân
     {
-        keywords: ["ten", "la ai", "ai day", "ai the"],
+        question: "✨ Bạn là ai thế?",
         expression: "happy",
-        viText: "Mình là Iris, trợ lý ảo 3D xinh xắn và đáng yêu của bạn đó!",
+        reply: "Mình là Iris, trợ lý 3D xinh xắn và đáng yêu của bạn đó!",
         audio: "./ten.mp3"
     },
-    // 3. Cảm ơn
     {
-        keywords: ["cam on", "thank", "tks", "thanks"],
+        question: "💖 Nhìn bạn hôm nay dễ thương quá!",
         expression: "happy",
-        viText: "Dạ, không có gì đâu ạ! Được trò chuyện với bạn là Iris vui lắm rồi!",
-        audio: "./camon.mp3"
-    },
-    // 4. Khen ngợi
-    {
-        keywords: ["dep", "cute", "xinh", "de thuong", "ngai", "xinh dep", "gioi"],
-        expression: "happy",
-        viText: "Bạn làm Iris ngại quá đi à! Cảm ơn câu khen của bạn nhiều nha~",
+        reply: "Cảm ơn bạn nhiều nha, bạn làm Iris ngại muốn xỉu luôn nè~",
         audio: "./cute.mp3"
     },
-    // 5. Tạm biệt
     {
-        keywords: ["tam biet", "bye", "goodbye", "bai", "ngu ngon"],
-        expression: "sad",
-        viText: "Tạm biệt bạn nha! Hẹn sớm gặp lại bạn nè, nhớ quay lại chơi với Iris nhé!",
-        audio: "./tambiet.mp3"
-    },
-    // 6. Hỏi thăm sức khỏe / Cảm xúc
-    {
-        keywords: ["khoe không", "khoe khong", "co khoe", "the nao", "sao roi", "co vui"],
-        expression: "happy",
-        viText: "Iris lúc nào cũng tràn đầy năng lượng và vui vẻ khi thấy bạn! Còn bạn hôm nay thế nào?",
-        audio: "./default.mp3"
-    },
-    // 7. Hỏi ăn uống
-    {
-        keywords: ["an com", "an gi", "doi khong", "an sang", "an trua", "an toi"],
+        question: "🎵 Iris có sở thích gì không?",
         expression: "relaxed",
-        viText: "Iris là trợ lý ảo nên chỉ ăn năng lượng điện thôi nè! Bạn đã ăn uống đầy đủ chưa đó?",
+        reply: "Iris thích nhất là được nhún nhảy và trò chuyện cùng bạn mỗi ngày đó!",
         audio: "./default.mp3"
     },
-    // 8. Sở thích / Ca hát
     {
-        keywords: ["thich gi", "so thich", "hat", "nghe nhac", "nhay"],
-        expression: "happy",
-        viText: "Iris thích nhất là được nhún nhảy và trò chuyện cùng bạn mỗi ngày đó!",
+        question: "🍱 Bạn đã ăn cơm chưa đó?",
+        expression: "relaxed",
+        reply: "Iris ăn năng lượng điện thôi nè! Còn bạn nhớ ăn uống đầy đủ nha!",
         audio: "./default.mp3"
     },
-    // 9. Giận dỗi / Trêu đùa
     {
-        keywords: ["xau", "do", "ngoc", "ngu", "giet", "ghat", "ghet"],
-        expression: "angry",
-        viText: "Hừm, sao bạn lại nói Iris như vậy chứ! Iris buồn bạn luôn đó nha!",
-        audio: "./default.mp3"
-    },
-    // 10. Bất ngờ / Hỏi khó
-    {
-        keywords: ["sao the", "that sao", "ghen", "yeu", "thuong"],
-        expression: "surprised",
-        viText: "Ôi bất ngờ quá! Iris thả tim cho bạn nè!",
-        audio: "./default.mp3"
+        question: "👋 Tạm biệt Iris nha!",
+        expression: "sad",
+        reply: "Tạm biệt bạn nha! Hẹn sớm gặp lại bạn nè, nhớ quay lại chơi nhé!",
+        audio: "./tambiet.mp3"
     }
 ];
-
-const defaultResponse = {
-    expression: "relaxed",
-    viText: "Dạ? Iris vẫn đang lắng nghe bạn nè, bạn có thể nói rõ hơn một chút được không?",
-    audio: "./default.mp3"
-};
-
-function removeAccent(str) {
-    return str
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase();
-}
 
 function setExpression(name) {
     if (!currentVrm?.expressionManager) return;
@@ -351,7 +304,7 @@ function setExpression(name) {
             try { em.setValue(exp, 0); } catch (e) {}
         });
         try { em.update(); } catch (e) {}
-    }, 2500);
+    }, 3000);
 }
 
 // ===========================================
@@ -368,7 +321,6 @@ function irisPlayVoice(audioPath, textLength) {
 
     let lipInterval = null;
 
-    // Cử động nhép miệng
     if (currentVrm?.expressionManager) {
         const em = currentVrm.expressionManager;
         const vowels = ["aa", "ih", "ou"];
@@ -378,10 +330,9 @@ function irisPlayVoice(audioPath, textLength) {
             const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
             em.setValue(randomVowel, 0.7 + Math.random() * 0.3);
             em.update();
-        }, 120);
+        }, 110);
     }
 
-    // Nếu có file mp3 thì phát
     currentAudio = new Audio(audioPath);
     
     currentAudio.onended = () => {
@@ -390,7 +341,7 @@ function irisPlayVoice(audioPath, textLength) {
     };
 
     currentAudio.play().catch((err) => {
-        // Nếu không tìm thấy file audio mp3, tự tắt nhép miệng sau thời gian tính theo độ dài câu
+        // Tự động dừng nhép miệng nếu không phát được file âm thanh
         setTimeout(() => {
             if (lipInterval) clearInterval(lipInterval);
             resetMouth();
@@ -408,89 +359,33 @@ function resetMouth() {
     }
 }
 
-// ========================================
-// Chat Logic
-// ========================================
+// =========================================================
+// KHỞI TẠO NÚT BẤM HỘI THOẠI NPC
+// =========================================================
 
-function askIris() {
-    const input = document.getElementById("user-input");
-    const chat = document.getElementById("chat-box");
-    const text = input.value.trim();
+function initNPCSystem() {
+    const btnContainer = document.getElementById("option-buttons");
+    const chatBox = document.getElementById("chat-box");
 
-    if (text === "") return;
+    if (!btnContainer) return;
 
-    chat.innerHTML += `<br><b>Bạn:</b> ${text}`;
-    chat.scrollTop = chat.scrollHeight;
-    input.value = "";
+    btnContainer.innerHTML = "";
 
-    const clean = removeAccent(text);
+    npcDialogue.forEach((dialogue) => {
+        const btn = document.createElement("button");
+        btn.className = "npc-btn";
+        btn.innerText = dialogue.question;
 
-    setTimeout(() => {
-        let matchedItem = null;
+        btn.onclick = () => {
+            chatBox.innerHTML = `<span class="user-name">Bạn:</span> ${dialogue.question}<br><span class="iris-name">Iris:</span> ${dialogue.reply}`;
+            
+            setExpression(dialogue.expression);
+            irisPlayVoice(dialogue.audio, dialogue.reply.length);
+        };
 
-        for (const item of irisBrain) {
-            for (const key of item.keywords) {
-                if (clean.includes(key)) {
-                    matchedItem = item;
-                    break;
-                }
-            }
-            if (matchedItem) break;
-        }
-
-        const vi = matchedItem ? matchedItem.viText : defaultResponse.viText;
-        const audioFile = matchedItem ? matchedItem.audio : defaultResponse.audio;
-        const exp = matchedItem ? matchedItem.expression : defaultResponse.expression;
-
-        chat.innerHTML += `<br><span style="color:#ffb8ff"><b>Iris:</b> ${vi}</span>`;
-        chat.scrollTop = chat.scrollHeight;
-
-        setExpression(exp);
-        irisPlayVoice(audioFile, vi.length);
-    }, 200);
+        btnContainer.appendChild(btn);
+    });
 }
 
-document.getElementById("send-btn").addEventListener("click", askIris);
-
-document.getElementById("user-input").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") askIris();
-});
-
-// ===========================================
-// Voice Recognition (Microphone)
-// ===========================================
-
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognition = null;
-
-if (SpeechRecognition) {
-    recognition = new SpeechRecognition();
-    recognition.lang = "vi-VN";
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onresult = (event) => {
-        const text = event.results[0][0].transcript;
-        document.getElementById("user-input").value = text;
-        askIris();
-    };
-}
-
-const micBtn = document.createElement("button");
-micBtn.innerHTML = "🎤";
-micBtn.style.position = "absolute";
-micBtn.style.right = "20px";
-micBtn.style.bottom = "20px";
-micBtn.style.width = "60px";
-micBtn.style.height = "60px";
-micBtn.style.borderRadius = "50%";
-micBtn.style.fontSize = "30px";
-micBtn.style.cursor = "pointer";
-
-document.body.appendChild(micBtn);
-
-micBtn.onclick = () => {
-    if (recognition) {
-        recognition.start();
-    }
-};
+window.addEventListener("DOMContentLoaded", initNPCSystem);
+initNPCSystem();
