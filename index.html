@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iris 3D - Cute NPC</title>
+    <title>Iris 3D - Interactive NPC</title>
     <style>
         * {
             margin: 0;
@@ -86,7 +86,6 @@
             padding-right: 4px;
         }
 
-        /* Tùy chỉnh thanh cuộn nút bấm */
         #option-buttons::-webkit-scrollbar {
             width: 4px;
         }
@@ -115,12 +114,12 @@
         }
     </style>
 
-    <!-- Import Map cho Three.js và VRM -->
+    <!-- Import Map (Dùng Three.js v0.154.0 để tương thích chuẩn với VRM) -->
     <script type="importmap">
     {
         "imports": {
-            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-            "three/examples/jsm/loaders/GLTFLoader.js": "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js",
+            "three": "https://unpkg.com/three@0.154.0/build/three.module.js",
+            "three/examples/jsm/loaders/GLTFLoader.js": "https://unpkg.com/three@0.154.0/examples/jsm/loaders/GLTFLoader.js",
             "@pixiv/three-vrm": "https://unpkg.com/@pixiv/three-vrm@2.0.0/lib/three-vrm.module.js"
         }
     }
