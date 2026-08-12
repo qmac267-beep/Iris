@@ -242,7 +242,7 @@ window.addEventListener("resize", () => {
 });
 
 // =========================================================
-// DANH SÁCH CÂU HỎI VÀ CÂU TRẢ LỜI NPC (Dễ dàng thêm bớt)
+// DANH SÁCH CÂU HỎI VÀ CÂU TRẢ LỜI NPC
 // =========================================================
 
 const npcDialogue = [
@@ -341,7 +341,6 @@ function irisPlayVoice(audioPath, textLength) {
     };
 
     currentAudio.play().catch((err) => {
-        // Tự động dừng nhép miệng nếu không phát được file âm thanh
         setTimeout(() => {
             if (lipInterval) clearInterval(lipInterval);
             resetMouth();
