@@ -3,116 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iris-Cute Waifu</title>
+    <title>Iris 3D - Cute NPC</title>
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
-            background-color: #1f1f28;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
+            box-sizing: border-box;
         }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #1f1f28;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
         #canvas-container {
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
+            height: 100%;
             position: absolute;
             top: 0;
             left: 0;
             z-index: 1;
         }
-        #chat-interface {
+
+        /* Khung hội thoại phong cách Game NPC */
+        #npc-dialogue-container {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
-            width: 350px;
-            max-height: 400px;
-            background: rgba(31, 31, 40, 0.75);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 184, 255, 0.2);
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 520px;
+            background: rgba(22, 22, 30, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 184, 255, 0.25);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            color: white;
+            z-index: 10;
+        }
+
+        #chat-box {
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+            min-height: 50px;
+            color: #ffffff;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px 15px;
             border-radius: 12px;
-            padding: 15px;
+            border-left: 4px solid #ffb8ff;
+        }
+
+        #chat-box .iris-name {
+            color: #ffb8ff;
+            font-weight: bold;
+        }
+
+        #chat-box .user-name {
+            color: #8be9fd;
+            font-weight: bold;
+        }
+
+        .option-title {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #option-buttons {
             display: flex;
             flex-direction: column;
-            z-index: 10;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        }
-        #chat-box {
-            flex-grow: 1;
+            gap: 8px;
+            max-height: 180px;
             overflow-y: auto;
-            color: #fff;
-            font-size: 14px;
-            line-height: 1.5;
-            margin-bottom: 10px;
-            max-height: 300px;
-            padding-right: 5px;
+            padding-right: 4px;
         }
-        #chat-box::-webkit-scrollbar {
+
+        /* Tùy chỉnh thanh cuộn nút bấm */
+        #option-buttons::-webkit-scrollbar {
             width: 4px;
         }
-        #chat-box::-webkit-scrollbar-thumb {
+        #option-buttons::-webkit-scrollbar-thumb {
             background: rgba(255, 184, 255, 0.3);
-            border-radius: 2px;
+            border-radius: 4px;
         }
-        #input-container {
-            display: flex;
-            gap: 8px;
-        }
-        #user-input {
-            flex-grow: 1;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 184, 255, 0.2);
-            padding: 8px 12px;
-            color: #fff;
-            border-radius: 6px;
-            outline: none;
-            font-size: 14px;
-        }
-        #user-input:focus {
-            border-color: rgba(255, 184, 255, 0.6);
-        }
-        #send-btn {
-            background: #ffb8ff;
-            color: #1f1f28;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
+
+        .npc-btn {
+            padding: 10px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #e0e0e0;
             cursor: pointer;
-            font-weight: bold;
+            text-align: left;
             font-size: 14px;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
         }
-        #send-btn:hover {
-            background: #ff99ff;
-            box-shadow: 0 0 10px rgba(255, 184, 255, 0.5);
+
+        .npc-btn:hover {
+            background: rgba(255, 184, 255, 0.2);
+            border-color: rgba(255, 184, 255, 0.5);
+            color: #fff;
+            transform: translateX(4px);
         }
     </style>
 
+    <!-- Import Map cho Three.js và VRM -->
     <script type="importmap">
-      {
+    {
         "imports": {
-          "three": "https://unpkg.com/three@0.154.0/build/three.module.js",
-          "three/examples/jsm/loaders/GLTFLoader.js": "https://unpkg.com/three@0.154.0/examples/jsm/loaders/GLTFLoader.js",
-          "@pixiv/three-vrm": "https://unpkg.com/@pixiv/three-vrm@2.0.2/lib/three-vrm.module.js"
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/examples/jsm/loaders/GLTFLoader.js": "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js",
+            "@pixiv/three-vrm": "https://unpkg.com/@pixiv/three-vrm@2.0.0/lib/three-vrm.module.js"
         }
-      }
+    }
     </script>
-    <!-- ================================================================= -->
 </head>
 <body>
 
-    <!-- Nơi chứa nhân vật 3D Iris -->
     <div id="canvas-container"></div>
 
-    <!-- Khung Chat Interface -->
-    <div id="chat-interface">
-        <div id="chat-box"><b>Iris:</b> Xin chào chủ nhân! Hôm nay bạn cần Iris giúp gì không? 💜</div>
-        <div id="input-container">
-            <input type="text" id="user-input" placeholder="Trò chuyện với Iris..." autocomplete="off">
-            <button id="send-btn">Gửi</button>
+    <div id="npc-dialogue-container">
+        <div id="chat-box">
+            <span class="iris-name">Iris:</span> Xin chào bạn! Bạn muốn trò chuyện gì với Iris nào? ✨
+        </div>
+        <div class="option-title">Lựa chọn câu hỏi:</div>
+        <div id="option-buttons">
+            <!-- Nút bấm sẽ được JS tự động sinh ra tại đây -->
         </div>
     </div>
 
-    <!-- Nhúng file logic JavaScript -->
-    <script type="module" src="main.js"></script>
+    <script type="module" src="./main.js"></script>
 </body>
 </html>
