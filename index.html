@@ -5,55 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iris 3D Avatar</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: #1f1f28; font-family: sans-serif; }
+        #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
 
-        body, html {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #1f1f28;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        #canvas-container {
-            width: 100%;
-            height: 100%;
+        /* Màn hình hiển thị thông báo lỗi debug */
+        #debug-log {
             position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+            background: rgba(0,0,0,0.8);
+            color: #ff5555;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            max-width: 80%;
+            display: none;
         }
 
-        /* Khung hiển thị cuộc trò chuyện & Nút bấm lựa chọn */
+        /* KHUNG CHAT ĐÃ ĐƯỢC CHỈNH LỆCH SANG TRÁI */
         #chat-container {
             position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            bottom: 30px;
+            left: 5%; /* Căn lề trái 5% thay vì ở giữa */
+            transform: none; /* Bỏ transform căn giữa cũ */
             width: 90%;
-            max-width: 550px;
+            max-width: 420px; /* Thu gọn chiều rộng một chút cho thanh thoát */
             background: rgba(22, 22, 30, 0.85);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 184, 255, 0.25);
             border-radius: 16px;
             padding: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
             z-index: 10;
             display: flex;
             flex-direction: column;
             gap: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
         #chat-box {
             font-size: 14px;
             line-height: 1.5;
             color: #ffffff;
-            max-height: 120px;
+            max-height: 110px;
             overflow-y: auto;
             background: rgba(0, 0, 0, 0.2);
             padding: 10px 12px;
@@ -61,17 +57,16 @@
             border-left: 3px solid #ffb8ff;
         }
 
-        /* Danh sách nút câu hỏi lựa chọn */
         .options-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
             gap: 8px;
-            max-height: 180px;
+            max-height: 160px;
             overflow-y: auto;
         }
 
         .option-btn {
-            padding: 10px 12px;
+            padding: 10px;
             border: 1px solid rgba(255, 184, 255, 0.3);
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.08);
@@ -81,30 +76,40 @@
             text-align: center;
             transition: all 0.2s ease;
         }
-
         .option-btn:hover {
             background: rgba(255, 184, 255, 0.25);
             border-color: #ffb8ff;
             transform: translateY(-2px);
         }
+
+        /* Tùy chỉnh responsive cho màn hình điện thoại nhỏ */
+        @media (max-width: 600px) {
+            #chat-container {
+                left: 50%;
+                transform: translateX(-50%);
+                width: 92%;
+            }
+        }
     </style>
 
+    <!-- CDN Three.js v0.154.0 chuẩn tương thích VRM -->
     <script type="importmap">
     {
         "imports": {
-            "three": "https://unpkg.com/three@0.154.0/build/three.module.js",
-            "three/examples/jsm/loaders/GLTFLoader.js": "https://unpkg.com/three@0.154.0/examples/jsm/loaders/GLTFLoader.js",
-            "@pixiv/three-vrm": "https://unpkg.com/@pixiv/three-vrm@2.0.0/lib/three-vrm.module.js"
+            "three": "https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.module.js",
+            "three/examples/jsm/loaders/GLTFLoader.js": "https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/loaders/GLTFLoader.js",
+            "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@2.0.0/lib/three-vrm.module.js"
         }
     }
     </script>
 </head>
 <body>
 
+    <div id="debug-log"></div>
     <div id="canvas-container"></div>
 
     <div id="chat-container">
-        <div id="chat-box"><b>Iris:</b> Xin chào bạn! Chọn câu hỏi bên dưới để trò chuyện cùng Iris nhé! ✨</div>
+        <div id="chat-box"><b>Iris:</b> Xin chào bạn! Bấm vào câu hỏi bên dưới để trò chuyện cùng Iris nhé! ✨</div>
         <div id="options-container" class="options-grid"></div>
     </div>
 
