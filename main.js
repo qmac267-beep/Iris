@@ -59,8 +59,6 @@ loader.load(
 
         VRMUtils.rotateVRM0(vrm);
         vrm.scene.rotation.y = 0; 
-        
-        // 👉 Đã hạ trục Y xuống 0.1 để kéo nhân vật xuống giữa màn hình
         vrm.scene.position.set(0, 0.1, -1.25);
         
         scene.add(vrm.scene);
@@ -139,8 +137,6 @@ function animate() {
         updateBlink(delta);
         updateLookAt(delta);
     }
-    
-    // 👉 Hạ điểm nhìn của camera xuống (0, 0.95, 0) cho vừa tầm mắt Yuki
     camera.lookAt(0, 0.95, 0);
     renderer.render(scene, camera);
 }
@@ -152,17 +148,17 @@ window.addEventListener("resize", () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Danh sách câu hỏi dành cho Yuki
+// Danh sách 10 câu thoại đã gắn đúng đường dẫn âm thanh tương ứng
 const yukiQuestions = [
     { label: "👋 Chào Yuki", exp: "happy", text: "Xin chào bạn nha! Mình là Yuki đây. Chúc bạn một ngày thật tuyệt vời nè!", audio: "./chao.mp3" },
     { label: "🌸 Bạn là ai?", exp: "happy", text: "Mình là Yuki, trợ lý ảo 3D xinh xắn và đáng yêu của bạn đó!", audio: "./ten.mp3" },
     { label: "💖 Khen Yuki cute", exp: "happy", text: "Bạn làm Yuki ngại quá đi à! Cảm ơn câu khen của bạn nhiều nha~", audio: "./cute.mp3" },
     { label: "❤️ Cảm ơn bạn", exp: "happy", text: "Dạ, không có gì đâu ạ! Được trò chuyện với bạn là Yuki vui lắm rồi!", audio: "./camon.mp3" },
-    { label: "☀️ Hôm nay thế nào?", exp: "happy", text: "Yuki lúc nào cũng tràn đầy năng lượng và vui vẻ khi thấy bạn!", audio: "./default.mp3" },
-    { label: "🍜 Bạn ăn gì chưa?", exp: "relaxed", text: "Yuki chỉ ăn năng lượng điện thôi nè! Bạn đã ăn uống đầy đủ chưa?", audio: "./default.mp3" },
-    { label: "🎵 Sở thích của bạn", exp: "happy", text: "Yuki thích nhất là được trò chuyện và đồng hành cùng bạn đó!", audio: "./default.mp3" },
-    { label: "😠 Trêu Yuki xấu", exp: "angry", text: "Hừm, sao bạn lại nói Yuki như vậy chứ! Yuki buồn bạn luôn đó!", audio: "./default.mp3" },
-    { label: "✨ Thả tim Yuki", exp: "surprised", text: "Ôi bất ngờ quá! Yuki thả tim lại cho bạn nè!", audio: "./default.mp3" },
+    { label: "☀️ Hôm nay thế nào?", exp: "happy", text: "Yuki lúc nào cũng tràn đầy năng lượng và vui vẻ khi thấy bạn!", audio: "./hom_nay.mp3" },
+    { label: "🍜 Bạn ăn gì chưa?", exp: "relaxed", text: "Yuki chỉ ăn năng lượng điện thôi nè! Bạn đã ăn uống đầy đủ chưa?", audio: "./an_gi.mp3" },
+    { label: "🎵 Sở thích của bạn", exp: "happy", text: "Yuki thích nhất là được trò chuyện và đồng hành cùng bạn đó!", audio: "./so_thich.mp3" },
+    { label: "😠 Trêu Yuki xấu", exp: "angry", text: "Hừm, sao bạn lại nói Yuki như vậy chứ! Yuki buồn bạn luôn đó!", audio: "./che_xau.mp3" },
+    { label: "✨ Thả tim Yuki", exp: "surprised", text: "Ôi bất ngờ quá! Yuki thả tim lại cho bạn nè!", audio: "./tha_tim.mp3" },
     { label: "👋 Tạm biệt", exp: "sad", text: "Tạm biệt bạn nha! Hẹn sớm gặp lại bạn nè!", audio: "./tambiet.mp3" }
 ];
 
