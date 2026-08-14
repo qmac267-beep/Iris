@@ -40,7 +40,6 @@ scene.add(fill);
 const clock = new THREE.Clock();
 let currentVrm = null;
 
-// Hàm bổ trợ lấy xương an toàn cho cả VRM 0.x lẫn 1.0
 function getBone(vrm, name) {
     if (!vrm.humanoid) return null;
     return vrm.humanoid.getNormalizedBoneNode(name) || vrm.humanoid.getRawBoneNode(name);
@@ -65,7 +64,6 @@ loader.load(
         scene.add(vrm.scene);
         currentVrm = vrm;
 
-        // Đặt tư thế hạ tay ngay sau khi load
         setupDefaultPose(vrm);
     },
     undefined,
@@ -74,29 +72,28 @@ loader.load(
     }
 );
 
-// Hàm chỉnh dáng tay
+// Ép hạ tay xuống bằng cách xoay trực tiếp trục Z của khớp vai
 function setupDefaultPose(vrm) {
     const leftUpperArm = getBone(vrm, "leftUpperArm");
     const rightUpperArm = getBone(vrm, "rightUpperArm");
     const leftLowerArm = getBone(vrm, "leftLowerArm");
     const rightLowerArm = getBone(vrm, "rightLowerArm");
 
-    // Nếu tay bị dâng lên, ta dùng góc xoay Z để hạ tay ép xuống
     if (leftUpperArm) {
-        leftUpperArm.rotation.set(0, 0, Math.PI / 2.6); // Hạ tay trái
+        // Xoay ngược chiều nhau để kéo tay áp sát thân người
+        leftUpperArm.rotation.z = -1.3; 
     }
     if (rightUpperArm) {
-        rightUpperArm.rotation.set(0, 0, -Math.PI / 2.6); // Hạ tay phải
+        rightUpperArm.rotation.z = 1.3;
     }
     if (leftLowerArm) {
-        leftLowerArm.rotation.set(0, 0.2, 0); // Khuỷu tay khép nhẹ
+        leftLowerArm.rotation.y = -0.2;
     }
     if (rightLowerArm) {
-        rightLowerArm.rotation.set(0, -0.2, 0);
+        rightLowerArm.rotation.y = 0.2;
     }
 }
 
-// Liếc mắt theo chuột
 const mouse = new THREE.Vector2(0, 0);
 window.addEventListener("mousemove", (e) => {
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -143,14 +140,13 @@ function updateIdle(time) {
         spine.rotation.x = Math.sin(time * 3.5) * 0.02;
     }
 
-    // Nhún nhẩy nhẹ hai tay theo nhịp thở
     const leftUpperArm = getBone(currentVrm, "leftUpperArm");
     const rightUpperArm = getBone(currentVrm, "rightUpperArm");
     if (leftUpperArm) {
-        leftUpperArm.rotation.z = (Math.PI / 2.6) + Math.sin(time * 3.5) * 0.02;
+        leftUpperArm.rotation.z = -1.3 + Math.sin(time * 3.5) * 0.02;
     }
     if (rightUpperArm) {
-        rightUpperArm.rotation.z = (-Math.PI / 2.6) - Math.sin(time * 3.5) * 0.02;
+        rightUpperArm.rotation.z = 1.3 - Math.sin(time * 3.5) * 0.02;
     }
 }
 
@@ -175,7 +171,6 @@ window.addEventListener("resize", () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Danh sách câu hỏi dành cho Yuki
 const yukiQuestions = [
     { label: "👋 Chào Yuki", exp: "happy", text: "Xin chào bạn nha! Mình là Yuki đây. Chúc bạn một ngày thật tuyệt vời nè!", audio: "./chao.mp3" },
     { label: "🌸 Bạn là ai?", exp: "happy", text: "Mình là Yuki, trợ lý ảo 3D xinh xắn và đáng yêu của bạn đó!", audio: "./ten.mp3" },
