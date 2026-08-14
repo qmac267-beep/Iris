@@ -59,7 +59,7 @@ loader.load(
 
         VRMUtils.rotateVRM0(vrm);
         vrm.scene.rotation.y = 0; 
-        vrm.scene.position.set(0, 0.6, -1.25);
+        vrm.scene.position.set(0, 0.7, -1.25);
         
         scene.add(vrm.scene);
         currentVrm = vrm;
@@ -72,7 +72,7 @@ loader.load(
     }
 );
 
-// Ép hạ tay xuống bằng cách xoay trực tiếp trục Z của khớp vai
+// Đặt tư thế hạ tay cố định
 function setupDefaultPose(vrm) {
     const leftUpperArm = getBone(vrm, "leftUpperArm");
     const rightUpperArm = getBone(vrm, "rightUpperArm");
@@ -80,7 +80,6 @@ function setupDefaultPose(vrm) {
     const rightLowerArm = getBone(vrm, "rightLowerArm");
 
     if (leftUpperArm) {
-        // Xoay ngược chiều nhau để kéo tay áp sát thân người
         leftUpperArm.rotation.z = -1.3; 
     }
     if (rightUpperArm) {
@@ -94,12 +93,14 @@ function setupDefaultPose(vrm) {
     }
 }
 
+// Mắt liếc theo con trỏ chuột
 const mouse = new THREE.Vector2(0, 0);
 window.addEventListener("mousemove", (e) => {
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 });
 
+// Tự động chớp mắt
 let blinkTimer = 0, blinkValue = 0;
 function updateBlink(delta) {
     blinkTimer += delta;
@@ -110,6 +111,7 @@ function updateBlink(delta) {
     }
 }
 
+// Xoay cổ nhẹ theo hướng chuột
 function updateLookAt(delta) {
     if (!currentVrm) return;
     const neck = getBone(currentVrm, "neck");
@@ -127,36 +129,11 @@ function updateLookAt(delta) {
     }
 }
 
-function updateIdle(time) {
-    if (!currentVrm) return;
-    const body = getBone(currentVrm, "hips");
-    const spine = getBone(currentVrm, "spine");
-
-    if (body) {
-        body.position.y = Math.sin(time * 3.5) * 0.025;
-        body.rotation.z = Math.sin(time * 1.8) * 0.015;
-    }
-    if (spine) {
-        spine.rotation.x = Math.sin(time * 3.5) * 0.02;
-    }
-
-    const leftUpperArm = getBone(currentVrm, "leftUpperArm");
-    const rightUpperArm = getBone(currentVrm, "rightUpperArm");
-    if (leftUpperArm) {
-        leftUpperArm.rotation.z = -1.3 + Math.sin(time * 3.5) * 0.02;
-    }
-    if (rightUpperArm) {
-        rightUpperArm.rotation.z = 1.3 - Math.sin(time * 3.5) * 0.02;
-    }
-}
-
 function animate() {
     requestAnimationFrame(animate);
     const delta = clock.getDelta();
-    const time = clock.elapsedTime;
     if (currentVrm) {
         currentVrm.update(delta);
-        updateIdle(time);
         updateBlink(delta);
         updateLookAt(delta);
     }
@@ -171,6 +148,7 @@ window.addEventListener("resize", () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+// Danh sách câu hỏi dành cho Yuki
 const yukiQuestions = [
     { label: "👋 Chào Yuki", exp: "happy", text: "Xin chào bạn nha! Mình là Yuki đây. Chúc bạn một ngày thật tuyệt vời nè!", audio: "./chao.mp3" },
     { label: "🌸 Bạn là ai?", exp: "happy", text: "Mình là Yuki, trợ lý ảo 3D xinh xắn và đáng yêu của bạn đó!", audio: "./ten.mp3" },
