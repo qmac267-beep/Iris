@@ -20,7 +20,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1f1f28);
 
 const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.set(0, 1.25, 1.95);
+camera.position.set(0, 1.2, 2.0);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setPixelRatio(window.devicePixelRatio);
@@ -59,7 +59,9 @@ loader.load(
 
         VRMUtils.rotateVRM0(vrm);
         vrm.scene.rotation.y = 0; 
-        vrm.scene.position.set(0, 0.5, -1.25);
+        
+        // 👉 Đã hạ trục Y xuống 0.1 để kéo nhân vật xuống giữa màn hình
+        vrm.scene.position.set(0, 0.1, -1.25);
         
         scene.add(vrm.scene);
         currentVrm = vrm;
@@ -137,7 +139,9 @@ function animate() {
         updateBlink(delta);
         updateLookAt(delta);
     }
-    camera.lookAt(0, 1.15, 0);
+    
+    // 👉 Hạ điểm nhìn của camera xuống (0, 0.95, 0) cho vừa tầm mắt Yuki
+    camera.lookAt(0, 0.95, 0);
     renderer.render(scene, camera);
 }
 animate();
@@ -156,7 +160,7 @@ const yukiQuestions = [
     { label: "❤️ Cảm ơn bạn", exp: "happy", text: "Dạ, không có gì đâu ạ! Được trò chuyện với bạn là Yuki vui lắm rồi!", audio: "./camon.mp3" },
     { label: "☀️ Hôm nay thế nào?", exp: "happy", text: "Yuki lúc nào cũng tràn đầy năng lượng và vui vẻ khi thấy bạn!", audio: "./default.mp3" },
     { label: "🍜 Bạn ăn gì chưa?", exp: "relaxed", text: "Yuki chỉ ăn năng lượng điện thôi nè! Bạn đã ăn uống đầy đủ chưa?", audio: "./default.mp3" },
-    { label: "🎵 Sở thích của bạn", exp: "happy", text: "Yuki thích nhất là được nhún nhảy và trò chuyện cùng bạn đó!", audio: "./default.mp3" },
+    { label: "🎵 Sở thích của bạn", exp: "happy", text: "Yuki thích nhất là được trò chuyện và đồng hành cùng bạn đó!", audio: "./default.mp3" },
     { label: "😠 Trêu Yuki xấu", exp: "angry", text: "Hừm, sao bạn lại nói Yuki như vậy chứ! Yuki buồn bạn luôn đó!", audio: "./default.mp3" },
     { label: "✨ Thả tim Yuki", exp: "surprised", text: "Ôi bất ngờ quá! Yuki thả tim lại cho bạn nè!", audio: "./default.mp3" },
     { label: "👋 Tạm biệt", exp: "sad", text: "Tạm biệt bạn nha! Hẹn sớm gặp lại bạn nè!", audio: "./tambiet.mp3" }
