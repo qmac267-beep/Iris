@@ -40,6 +40,12 @@ scene.add(fill);
 const clock = new THREE.Clock();
 let currentVrm = null;
 
+// Hàm bổ trợ lấy xương an toàn cho cả VRM 0.x lẫn 1.0
+function getBone(vrm, name) {
+    if (!vrm.humanoid) return null;
+    return vrm.humanoid.getNormalizedBoneNode(name) || vrm.humanoid.getRawBoneNode(name);
+}
+
 const loader = new GLTFLoader();
 loader.register((parser) => new VRMLoaderPlugin(parser));
 
@@ -52,18 +58,14 @@ loader.load(
             return;
         }
 
-        // Sửa lỗi xoay hướng VRM
         VRMUtils.rotateVRM0(vrm);
-        // Đặt góc quay chuẩn để quay mặt ra phía trước
         vrm.scene.rotation.y = 0; 
-
-        // Vị trí nhân vật
         vrm.scene.position.set(0, 0.7, -1.25);
         
         scene.add(vrm.scene);
         currentVrm = vrm;
 
-        // Ép hạ tay xuống ngay khi tải xong để bỏ dáng Y-pose
+        // Đặt tư thế hạ tay ngay sau khi load
         setupDefaultPose(vrm);
     },
     undefined,
@@ -72,26 +74,29 @@ loader.load(
     }
 );
 
-// Hàm chỉnh dáng đứng tự nhiên (Hạ tay xuống)
+// Hàm chỉnh dáng tay
 function setupDefaultPose(vrm) {
-    if (!vrm.humanoid) return;
+    const leftUpperArm = getBone(vrm, "leftUpperArm");
+    const rightUpperArm = getBone(vrm, "rightUpperArm");
+    const leftLowerArm = getBone(vrm, "leftLowerArm");
+    const rightLowerArm = getBone(vrm, "rightLowerArm");
 
-    // Lấy các khớp xương vai và tay
-    const leftUpperArm = vrm.humanoid.getNormalizedBoneNode("leftUpperArm");
-    const rightUpperArm = vrm.humanoid.getNormalizedBoneNode("rightUpperArm");
-    const leftLowerArm = vrm.humanoid.getNormalizedBoneNode("leftLowerArm");
-    const rightLowerArm = vrm.humanoid.getNormalizedBoneNode("rightLowerArm");
-
-    // Xoay khớp vai hạ tay xuống áp sát thân người
-    if (leftUpperArm) leftUpperArm.rotation.z = 1.25;
-    if (rightUpperArm) rightUpperArm.rotation.z = -1.25;
-
-    // Khớp khuỷu tay hơi cong nhẹ cho tự nhiên
-    if (leftLowerArm) leftLowerArm.rotation.y = -0.2;
-    if (rightLowerArm) rightLowerArm.rotation.y = 0.2;
+    // Nếu tay bị dâng lên, ta dùng góc xoay Z để hạ tay ép xuống
+    if (leftUpperArm) {
+        leftUpperArm.rotation.set(0, 0, Math.PI / 2.6); // Hạ tay trái
+    }
+    if (rightUpperArm) {
+        rightUpperArm.rotation.set(0, 0, -Math.PI / 2.6); // Hạ tay phải
+    }
+    if (leftLowerArm) {
+        leftLowerArm.rotation.set(0, 0.2, 0); // Khuỷu tay khép nhẹ
+    }
+    if (rightLowerArm) {
+        rightLowerArm.rotation.set(0, -0.2, 0);
+    }
 }
 
-// Liếc mắt theo chuột & cảm ứng
+// Liếc mắt theo chuột
 const mouse = new THREE.Vector2(0, 0);
 window.addEventListener("mousemove", (e) => {
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -110,8 +115,8 @@ function updateBlink(delta) {
 
 function updateLookAt(delta) {
     if (!currentVrm) return;
-    const neck = currentVrm.humanoid?.getNormalizedBoneNode("neck");
-    const head = currentVrm.humanoid?.getNormalizedBoneNode("head");
+    const neck = getBone(currentVrm, "neck");
+    const head = getBone(currentVrm, "head");
     if (!neck) return;
 
     const targetX = mouse.x * 0.35;
@@ -127,8 +132,8 @@ function updateLookAt(delta) {
 
 function updateIdle(time) {
     if (!currentVrm) return;
-    const body = currentVrm.humanoid?.getNormalizedBoneNode("hips");
-    const spine = currentVrm.humanoid?.getNormalizedBoneNode("spine");
+    const body = getBone(currentVrm, "hips");
+    const spine = getBone(currentVrm, "spine");
 
     if (body) {
         body.position.y = Math.sin(time * 3.5) * 0.025;
@@ -138,11 +143,15 @@ function updateIdle(time) {
         spine.rotation.x = Math.sin(time * 3.5) * 0.02;
     }
 
-    // Nhún nhảy tay theo nhịp thở nhẹ nhàng
-    const leftUpperArm = currentVrm.humanoid?.getNormalizedBoneNode("leftUpperArm");
-    const rightUpperArm = currentVrm.humanoid?.getNormalizedBoneNode("rightUpperArm");
-    if (leftUpperArm) leftUpperArm.rotation.z = 1.25 + Math.sin(time * 3.5) * 0.02;
-    if (rightUpperArm) rightUpperArm.rotation.z = -1.25 - Math.sin(time * 3.5) * 0.02;
+    // Nhún nhẩy nhẹ hai tay theo nhịp thở
+    const leftUpperArm = getBone(currentVrm, "leftUpperArm");
+    const rightUpperArm = getBone(currentVrm, "rightUpperArm");
+    if (leftUpperArm) {
+        leftUpperArm.rotation.z = (Math.PI / 2.6) + Math.sin(time * 3.5) * 0.02;
+    }
+    if (rightUpperArm) {
+        rightUpperArm.rotation.z = (-Math.PI / 2.6) - Math.sin(time * 3.5) * 0.02;
+    }
 }
 
 function animate() {
