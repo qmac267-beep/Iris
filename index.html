@@ -3,11 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iris 3D Avatar</title>
+    <title>Yuki 3D Avatar</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body, html { width: 100%; height: 100%; overflow: hidden; background-color: #1f1f28; font-family: sans-serif; }
-        #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        body, html { 
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden; 
+            background-color: #1f1f28; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        }
+
+        #canvas-container { 
+            width: 100%; 
+            height: 100%; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            z-index: 1; 
+        }
 
         /* Màn hình hiển thị thông báo lỗi debug */
         #debug-log {
@@ -24,14 +43,13 @@
             display: none;
         }
 
-        /* KHUNG CHAT ĐÃ ĐƯỢC CHỈNH LỆCH SANG TRÁI */
+        /* --- MÁY TÍNH: KHUNG CHAT LỆCH TRÁI --- */
         #chat-container {
             position: absolute;
             bottom: 30px;
-            left: 5%; /* Căn lề trái 5% thay vì ở giữa */
-            transform: none; /* Bỏ transform căn giữa cũ */
+            left: 5%;
             width: 90%;
-            max-width: 420px; /* Thu gọn chiều rộng một chút cho thanh thoát */
+            max-width: 420px;
             background: rgba(22, 22, 30, 0.85);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
@@ -41,58 +59,84 @@
             z-index: 10;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
         #chat-box {
             font-size: 14px;
-            line-height: 1.5;
+            line-height: 1.4;
             color: #ffffff;
-            max-height: 110px;
+            max-height: 100px;
             overflow-y: auto;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 10px;
             border-radius: 10px;
             border-left: 3px solid #ffb8ff;
         }
 
         .options-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 8px;
-            max-height: 160px;
+            max-height: 150px;
             overflow-y: auto;
         }
 
         .option-btn {
-            padding: 10px;
+            padding: 8px 10px;
             border: 1px solid rgba(255, 184, 255, 0.3);
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.08);
             color: #fff;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
             text-align: center;
             transition: all 0.2s ease;
         }
+
         .option-btn:hover {
             background: rgba(255, 184, 255, 0.25);
             border-color: #ffb8ff;
             transform: translateY(-2px);
         }
 
-        /* Tùy chỉnh responsive cho màn hình điện thoại nhỏ */
+        /* --- ĐIỆN THOẠI (DƯỚI 600PX): ĐẨY NHÂN VẬT LÊN VÀ THU GỌN CHAT --- */
         @media (max-width: 600px) {
+            #canvas-container {
+                height: 65%;
+                top: 0;
+            }
+
             #chat-container {
                 left: 50%;
                 transform: translateX(-50%);
+                bottom: 12px;
                 width: 92%;
+                max-width: none;
+                padding: 12px;
+                gap: 8px;
+            }
+
+            #chat-box {
+                font-size: 13px;
+                max-height: 70px;
+                padding: 8px;
+            }
+
+            .options-grid {
+                grid-template-columns: repeat(2, 1fr);
+                max-height: 120px;
+            }
+
+            .option-btn {
+                padding: 8px 6px;
+                font-size: 11px;
             }
         }
     </style>
 
-    <!-- CDN Three.js v0.154.0 chuẩn tương thích VRM -->
+    <!-- CDN Three.js v0.154.0 -->
     <script type="importmap">
     {
         "imports": {
@@ -109,7 +153,7 @@
     <div id="canvas-container"></div>
 
     <div id="chat-container">
-        <div id="chat-box"><b>Iris:</b> Xin chào bạn! Bấm vào câu hỏi bên dưới để trò chuyện cùng Iris nhé! ✨</div>
+        <div id="chat-box"><b>Yuki:</b> Xin chào bạn! Bấm vào câu hỏi bên dưới để trò chuyện cùng Yuki nhé! ✨</div>
         <div id="options-container" class="options-grid"></div>
     </div>
 
