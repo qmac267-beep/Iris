@@ -51,20 +51,45 @@ loader.load(
             showError("File character.vrm không hợp lệ hoặc thiếu dữ liệu VRM.");
             return;
         }
+
+        // Sửa lỗi xoay hướng VRM
         VRMUtils.rotateVRM0(vrm);
-        vrm.scene.rotation.y = Math.PI;
-        
+        // Đặt góc quay chuẩn để quay mặt ra phía trước
+        vrm.scene.rotation.y = 0; 
+
         // Vị trí nhân vật
         vrm.scene.position.set(0, 0.7, -1.25);
         
         scene.add(vrm.scene);
         currentVrm = vrm;
+
+        // Ép hạ tay xuống ngay khi tải xong để bỏ dáng Y-pose
+        setupDefaultPose(vrm);
     },
     undefined,
     (err) => {
         showError("Không tìm thấy file <b>character.vrm</b> trong thư mục dự án!");
     }
 );
+
+// Hàm chỉnh dáng đứng tự nhiên (Hạ tay xuống)
+function setupDefaultPose(vrm) {
+    if (!vrm.humanoid) return;
+
+    // Lấy các khớp xương vai và tay
+    const leftUpperArm = vrm.humanoid.getNormalizedBoneNode("leftUpperArm");
+    const rightUpperArm = vrm.humanoid.getNormalizedBoneNode("rightUpperArm");
+    const leftLowerArm = vrm.humanoid.getNormalizedBoneNode("leftLowerArm");
+    const rightLowerArm = vrm.humanoid.getNormalizedBoneNode("rightLowerArm");
+
+    // Xoay khớp vai hạ tay xuống áp sát thân người
+    if (leftUpperArm) leftUpperArm.rotation.z = 1.25;
+    if (rightUpperArm) rightUpperArm.rotation.z = -1.25;
+
+    // Khớp khuỷu tay hơi cong nhẹ cho tự nhiên
+    if (leftLowerArm) leftLowerArm.rotation.y = -0.2;
+    if (rightLowerArm) rightLowerArm.rotation.y = 0.2;
+}
 
 // Liếc mắt theo chuột & cảm ứng
 const mouse = new THREE.Vector2(0, 0);
@@ -113,10 +138,11 @@ function updateIdle(time) {
         spine.rotation.x = Math.sin(time * 3.5) * 0.02;
     }
 
-    const leftUpperArm = currentVrm.humanoid?.getRawBoneNode("leftUpperArm");
-    const rightUpperArm = currentVrm.humanoid?.getRawBoneNode("rightUpperArm");
-    if (leftUpperArm) leftUpperArm.rotation.z = 1.35 + Math.sin(time * 3.5) * 0.02;
-    if (rightUpperArm) rightUpperArm.rotation.z = -1.35 - Math.sin(time * 3.5) * 0.02;
+    // Nhún nhảy tay theo nhịp thở nhẹ nhàng
+    const leftUpperArm = currentVrm.humanoid?.getNormalizedBoneNode("leftUpperArm");
+    const rightUpperArm = currentVrm.humanoid?.getNormalizedBoneNode("rightUpperArm");
+    if (leftUpperArm) leftUpperArm.rotation.z = 1.25 + Math.sin(time * 3.5) * 0.02;
+    if (rightUpperArm) rightUpperArm.rotation.z = -1.25 - Math.sin(time * 3.5) * 0.02;
 }
 
 function animate() {
