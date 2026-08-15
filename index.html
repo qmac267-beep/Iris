@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yuki 3D</title>
+    <title>Yuki 3D - Trợ lý ảo</title>
 
     <!-- Thư viện Three.js và VRM Loader -->
     <script type="importmap">
@@ -31,7 +31,7 @@
             height: 100vh;
         }
 
-        /* --- MÀN HÌNH LOADING MẶC ĐỊNH 10 GIÂY --- */
+        /* --- MÀN HÌNH LOADING MẶC ĐỊNH 30 GIÂY --- */
         #loading-screen {
             position: fixed;
             top: 0;
@@ -69,7 +69,7 @@
             letter-spacing: 0.5px;
         }
 
-        /* Thanh tiến trình đếm ngược 10s */
+        /* Thanh tiến trình đếm ngược 30s */
         .progress-box {
             width: 260px;
             height: 8px;
@@ -83,7 +83,8 @@
             width: 0%;
             height: 100%;
             background: #ffb8ff;
-            transition: width 10s linear;
+            /* Tăng thời gian chạy hiệu ứng thanh nạp lên 30s */
+            transition: width 30s linear;
         }
 
         @keyframes spin {
@@ -171,10 +172,10 @@
 </head>
 <body>
 
-    <!-- Màn hình Loading 10s -->
+    <!-- Màn hình Loading 30s -->
     <div id="loading-screen">
         <div class="loader-spinner"></div>
-        <p id="loading-text">Đang đánh thức Yuki... (10s)</p>
+        <p id="loading-text">Đang đánh thức Yuki... (30s)</p>
         <div class="progress-box">
             <div class="progress-bar" id="progress-bar"></div>
         </div>
@@ -194,7 +195,7 @@
         import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
         import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
 
-        // --- BẮT ĐẦU ĐẾM NGUỢC LOADING 10 GIÂY ---
+        // --- BẮT ĐẦU ĐẾM NGƯỢC LOADING 30 GIÂY ---
         const progressBar = document.getElementById('progress-bar');
         const loadingText = document.getElementById('loading-text');
         
@@ -202,7 +203,7 @@
             if (progressBar) progressBar.style.width = '100%';
         }, 50);
 
-        let secondsLeft = 10;
+        let secondsLeft = 30;
         const countdown = setInterval(() => {
             secondsLeft--;
             if (secondsLeft > 0) {
@@ -213,14 +214,14 @@
             }
         }, 1000);
 
-        // Đúng 10 giây (10000ms) mới tắt màn hình loading
+        // Đúng 30 giây (30000ms) mới ẩn màn hình loading
         setTimeout(() => {
             const loadingScreen = document.getElementById("loading-screen");
             if (loadingScreen) {
                 loadingScreen.classList.add("fade-out");
                 setTimeout(() => loadingScreen.remove(), 1000);
             }
-        }, 10000);
+        }, 30000);
 
         function showError(msg) {
             const log = document.getElementById("debug-log");
@@ -268,7 +269,7 @@
         const loader = new GLTFLoader();
         loader.register((parser) => new VRMLoaderPlugin(parser));
 
-        // Tải nhân vật VRM ngầm trong lúc chờ 10s
+        // Tải nhân vật VRM ngầm trong lúc chờ 30s
         loader.load(
             "./character.vrm",
             (gltf) => {
