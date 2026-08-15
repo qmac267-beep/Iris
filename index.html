@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yuki 3D - Trợ lý ảo</title>
+    <title>Yuki 3D</title>
 
     <!-- Thư viện Three.js và VRM Loader -->
     <script type="importmap">
@@ -31,7 +31,7 @@
             height: 100vh;
         }
 
-        /* --- MÀN HÌNH LOADING MẶC ĐỊNH 30 GIÂY --- */
+        /* --- MÀN HÌNH LOADING CỰC NHANH --- */
         #loading-screen {
             position: fixed;
             top: 0;
@@ -44,7 +44,8 @@
             align-items: center;
             justify-content: center;
             z-index: 9999;
-            transition: opacity 1s ease, visibility 1s ease;
+            /* Rút ngắn thời gian mờ dần xuống 0.4s */
+            transition: opacity 0.4s ease, visibility 0.4s ease;
         }
 
         #loading-screen.fade-out {
@@ -61,7 +62,7 @@
             animation: spin 1s linear infinite;
         }
 
-        #loading-screen p {
+        #loading-text {
             color: #ffb8ff;
             font-size: 1.1rem;
             font-weight: 600;
@@ -69,7 +70,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* Thanh tiến trình đếm ngược 30s */
         .progress-box {
             width: 260px;
             height: 8px;
@@ -83,8 +83,7 @@
             width: 0%;
             height: 100%;
             background: #ffb8ff;
-            /* Tăng thời gian chạy hiệu ứng thanh nạp lên 30s */
-            transition: width 30s linear;
+            transition: width 0.2s ease;
         }
 
         @keyframes spin {
@@ -100,7 +99,7 @@
             left: 0;
         }
 
-        /* --- GIAO DIỆN CHAT & NÚT CÂU HỎI CỦA YUKI --- */
+        /* --- GIAO DIỆN CHAT & NÚT CÂU HỎI --- */
         #ui-container {
             position: absolute;
             bottom: 20px;
@@ -172,10 +171,9 @@
 </head>
 <body>
 
-    <!-- Màn hình Loading 30s -->
     <div id="loading-screen">
         <div class="loader-spinner"></div>
-        <p id="loading-text">Đang đánh thức Yuki... (30s)</p>
+        <p id="loading-text">Đang tải nhân vật (0%)...</p>
         <div class="progress-box">
             <div class="progress-bar" id="progress-bar"></div>
         </div>
@@ -189,39 +187,13 @@
         <div id="options-container"></div>
     </div>
 
-    <!-- CODE 3D & LOGIC YUKI -->
     <script type="module">
         import * as THREE from "three";
         import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
         import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
 
-        // --- BẮT ĐẦU ĐẾM NGƯỢC LOADING 30 GIÂY ---
         const progressBar = document.getElementById('progress-bar');
         const loadingText = document.getElementById('loading-text');
-        
-        setTimeout(() => {
-            if (progressBar) progressBar.style.width = '100%';
-        }, 50);
-
-        let secondsLeft = 30;
-        const countdown = setInterval(() => {
-            secondsLeft--;
-            if (secondsLeft > 0) {
-                if (loadingText) loadingText.innerText = `Đang đánh thức Yuki... (${secondsLeft}s)`;
-            } else {
-                if (loadingText) loadingText.innerText = 'Đã sẵn sàng!';
-                clearInterval(countdown);
-            }
-        }, 1000);
-
-        // Đúng 30 giây (30000ms) mới ẩn màn hình loading
-        setTimeout(() => {
-            const loadingScreen = document.getElementById("loading-screen");
-            if (loadingScreen) {
-                loadingScreen.classList.add("fade-out");
-                setTimeout(() => loadingScreen.remove(), 1000);
-            }
-        }, 30000);
 
         function showError(msg) {
             const log = document.getElementById("debug-log");
@@ -260,6 +232,7 @@
 
         const clock = new THREE.Clock();
         let currentVrm = null;
+        let isModelReady = false;
 
         function getBone(vrm, name) {
             if (!vrm.humanoid) return null;
@@ -269,7 +242,6 @@
         const loader = new GLTFLoader();
         loader.register((parser) => new VRMLoaderPlugin(parser));
 
-        // Tải nhân vật VRM ngầm trong lúc chờ 30s
         loader.load(
             "./character.vrm",
             (gltf) => {
@@ -283,18 +255,43 @@
                 vrm.scene.rotation.y = 0; 
                 vrm.scene.position.set(0, 0.1, -1.25);
                 
+                vrm.scene.visible = false;
                 scene.add(vrm.scene);
                 currentVrm = vrm;
 
                 setupDefaultPose(vrm);
+                vrm.update(0);
+
+                // Tải xong là xử lý tư thế cực nhanh và mở màn hình ngay
+                setTimeout(() => {
+                    vrm.scene.visible = true;
+                    isModelReady = true;
+
+                    if (progressBar) progressBar.style.width = "100%";
+                    if (loadingText) loadingText.innerText = "Đã sẵn sàng!";
+
+                    // Tắt màn hình loading tức thì
+                    const loadingScreen = document.getElementById("loading-screen");
+                    if (loadingScreen) {
+                        loadingScreen.classList.add("fade-out");
+                        setTimeout(() => loadingScreen.remove(), 400);
+                    }
+                }, 100);
             },
-            undefined,
+            (progress) => {
+                if (progress.total > 0) {
+                    const percent = Math.round((progress.loaded / progress.total) * 100);
+                    if (progressBar) progressBar.style.width = percent + "%";
+                    if (loadingText) loadingText.innerText = `Đang tải nhân vật (${percent}%)...`;
+                } else {
+                    if (loadingText) loadingText.innerText = "Đang xử lý mô hình...";
+                }
+            },
             (err) => {
                 showError("Không tìm thấy file <b>character.vrm</b> trong thư mục dự án!");
             }
         );
 
-        // Đặt tư thế hạ tay cố định
         function setupDefaultPose(vrm) {
             const leftUpperArm = getBone(vrm, "leftUpperArm");
             const rightUpperArm = getBone(vrm, "rightUpperArm");
@@ -307,14 +304,12 @@
             if (rightLowerArm) rightLowerArm.rotation.y = 0.2;
         }
 
-        // Mắt liếc theo con trỏ chuột
         const mouse = new THREE.Vector2(0, 0);
         window.addEventListener("mousemove", (e) => {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
         });
 
-        // Tự động chớp mắt
         let blinkTimer = 0, blinkValue = 0;
         function updateBlink(delta) {
             blinkTimer += delta;
@@ -325,9 +320,8 @@
             }
         }
 
-        // Xoay cổ nhẹ theo hướng chuột
         function updateLookAt(delta) {
-            if (!currentVrm) return;
+            if (!currentVrm || !isModelReady) return;
             const neck = getBone(currentVrm, "neck");
             const head = getBone(currentVrm, "head");
             if (!neck) return;
@@ -362,7 +356,6 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Danh sách 10 câu thoại chuẩn
         const yukiQuestions = [
             { label: "👋 Chào Yuki", exp: "happy", text: "Xin chào bạn nha! Mình là Yuki đây. Chúc bạn một ngày thật tuyệt vời nè!", audio: "./chao.mp3" },
             { label: "🌸 Bạn là ai?", exp: "happy", text: "Mình là Yuki, trợ lý ảo 3D xinh xắn và đáng yêu của bạn đó!", audio: "./ten.mp3" },
