@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yuki 3D - Phiên bản Loading Mượt</title>
+    <title>Yuki 3D</title>
 
     <!-- Thư viện Three.js và VRM Loader -->
     <script type="importmap">
@@ -44,7 +44,8 @@
             align-items: center;
             justify-content: center;
             z-index: 9999;
-            transition: opacity 0.8s ease, visibility 0.8s ease;
+            /* Chuyển sang 1.5s để hiệu ứng biến mất mượt mà và chậm rãi hơn */
+            transition: opacity 1.5s ease, visibility 1.5s ease;
         }
 
         #loading-screen.fade-out {
@@ -239,12 +240,15 @@
 
                 setupDefaultPose(vrm);
 
-                // 👉 Ẩn màn hình loading mượt mà sau khi VRM tải xong
-                const loadingScreen = document.getElementById("loading-screen");
-                if (loadingScreen) {
-                    loadingScreen.classList.add("fade-out");
-                    setTimeout(() => loadingScreen.remove(), 800);
-                }
+                // 👉 GIỮ MÀN HÌNH LOADING LÂU HƠN 2 GIÂY RỒI MỚI MỜ DẦN MƯỢT MÀ
+                setTimeout(() => {
+                    const loadingScreen = document.getElementById("loading-screen");
+                    if (loadingScreen) {
+                        loadingScreen.classList.add("fade-out");
+                        // Xóa phần tử khỏi DOM sau khi hiệu ứng mờ 1.5s hoàn tất
+                        setTimeout(() => loadingScreen.remove(), 1500);
+                    }
+                }, 2000); // 2000ms = 2 giây hoãn ẩn
             },
             undefined,
             (err) => {
@@ -322,7 +326,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Danh sách 10 câu thoại với đầy đủ file âm thanh
+        // Danh sách 10 câu thoại
         const yukiQuestions = [
             { label: "👋 Chào Yuki", exp: "happy", text: "Xin chào bạn nha! Mình là Yuki đây. Chúc bạn một ngày thật tuyệt vời nè!", audio: "./chao.mp3" },
             { label: "🌸 Bạn là ai?", exp: "happy", text: "Mình là Yuki, trợ lý ảo 3D xinh xắn và đáng yêu của bạn đó!", audio: "./ten.mp3" },
